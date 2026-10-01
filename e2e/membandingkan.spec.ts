@@ -30,6 +30,16 @@ test('unknown module goes back to the module list', async ({ page }) => {
   await expect(page).toHaveURL(/#\/$/);
 });
 
+test('an unknown module link does not trap the Back button', async ({ page }) => {
+  await page.goto('./');
+  const before = await page.evaluate(() => history.length);
+  await page.evaluate(() => {
+    location.hash = '#/tidak-ada/peraga';
+  });
+  await expect(page).toHaveURL(/#\/$/);
+  expect(await page.evaluate(() => history.length)).toBe(before + 1);
+});
+
 test('student finishes Latihan and gets the stamp', async ({ page }) => {
   await page.goto('./#/membandingkan/latihan');
   for (let i = 0; i < 5; i++) {
@@ -43,18 +53,51 @@ test('student finishes Latihan and gets the stamp', async ({ page }) => {
   await expect(page.getByRole('img', { name: 'Stempel: Hebat!' })).toBeVisible();
 });
 
-test('two wrong answers unlock Tunjukkan caranya', async ({ page }) => {
+test('re-checking the same wrong answer does not count as another mistake', async ({ page }) => {
   await page.goto('./#/membandingkan/latihan');
   const cards = await readCards(page);
   const smaller = [...cards].sort((x, y) => valueOf(x.value) - valueOf(y.value))[0];
-  await dragTo(page, page.locator(`[data-card="${smaller.id}"]`), page.getByTestId('slot-besar'));
-  await page.getByRole('button', { name: 'Cek jawaban' }).click();
+  const card = page.locator(`[data-card="${smaller.id}"]`);
+  const check = page.getByRole('button', { name: 'Cek jawaban' });
+  await dragTo(page, card, page.getByTestId('slot-besar'));
+  await check.click();
   await expect(page.getByText('Coba tumpuk pitanya. Mana yang lebih panjang?')).toBeVisible();
+  await expect(check).toBeDisabled();
+  await dragTo(page, card, page.getByTestId('pile'));
+  await expect(check).toBeDisabled();
+  await dragTo(page, card, page.getByTestId('slot-besar'));
+  await expect(check).toBeDisabled();
   await expect(page.getByRole('button', { name: 'Tunjukkan caranya' })).toHaveCount(0);
+});
+
+test('two different wrong answers unlock Tunjukkan caranya and keep the pita open', async ({ page }) => {
+  await page.goto('./#/membandingkan/latihan');
+  await solveCurrentTask(page);
+  await page.getByRole('button', { name: 'Cek jawaban' }).click();
+  await page.getByRole('button', { name: 'Soal berikutnya →' }).click();
+  await expect(page.getByText('Soal 2 dari 5')).toBeVisible();
+  const sorted = [...(await readCards(page))].sort((x, y) => valueOf(x.value) - valueOf(y.value));
+  const [small, middle, large] = sorted.map((c) => page.locator(`[data-card="${c.id}"]`));
+  await dragTo(page, large, page.getByTestId('slot-s1'));
+  await dragTo(page, middle, page.getByTestId('slot-s2'));
+  await dragTo(page, small, page.getByTestId('slot-s3'));
+  await page.getByRole('button', { name: 'Cek jawaban' }).click();
+  await expect(page.getByRole('button', { name: 'Tunjukkan caranya' })).toHaveCount(0);
+  await dragTo(page, large, page.getByTestId('slot-s2'));
   await page.getByRole('button', { name: 'Cek jawaban' }).click();
   await page.getByRole('button', { name: 'Tunjukkan caranya' }).click();
-  await expect(page.getByRole('button', { name: 'Soal berikutnya →' })).toBeVisible();
-  await expect(page.getByLabel('Soal 1: dibantu')).toBeVisible();
+  await expect(page.getByRole('group', { name: 'Pita pecahan' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Soal berikutnya →' })).toBeFocused();
+  await expect(page.getByLabel('Soal 2: dibantu')).toBeVisible();
+});
+
+test('Peraga numbers survive a trip to Latihan', async ({ page }) => {
+  await page.goto('./#/membandingkan/peraga?a=2/5&b=3/7');
+  await page.getByRole('link', { name: 'Latihan', exact: true }).click();
+  await expect(page.getByText('Soal 1 dari 5')).toBeVisible();
+  await page.getByRole('link', { name: 'Peraga', exact: true }).click();
+  await expect(page.getByLabel('Pembilang Pecahan A', { exact: true })).toHaveValue('2');
+  await expect(page.getByLabel('Penyebut Pecahan B', { exact: true })).toHaveValue('7');
 });
 
 test('no horizontal scroll on the module page', async ({ page }) => {
