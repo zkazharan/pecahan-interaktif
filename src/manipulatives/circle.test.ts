@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { createRng } from '../lib/random';
-import { equalSlices, isEqualCut, sliceAngles, unequalSlices, wedgePath } from './circle';
+import { CIRCLE, equalSlices, guidePoints, isEqualCut, sliceAngles, unequalSlices, wedgePath } from './circle';
 
 const sum = (xs: readonly number[]) => xs.reduce((a, b) => a + b, 0);
 
@@ -61,5 +61,21 @@ describe('wedgePath', () => {
   it('draws a full circle for a single slice', () => {
     const [whole] = sliceAngles([1]);
     expect(wedgePath(whole.start, whole.end)).toBe('M 100 10 A 90 90 0 1 1 100 190 A 90 90 0 1 1 100 10 Z');
+  });
+});
+
+describe('guidePoints', () => {
+  it('starts at the top and goes clockwise', () => {
+    const [top, right, bottom, left] = guidePoints(4);
+    expect(top.x).toBeCloseTo(CIRCLE.cx);
+    expect(top.y).toBeCloseTo(CIRCLE.cy - CIRCLE.r);
+    expect(right.x).toBeCloseTo(CIRCLE.cx + CIRCLE.r);
+    expect(bottom.y).toBeCloseTo(CIRCLE.cy + CIRCLE.r);
+    expect(left.x).toBeCloseTo(CIRCLE.cx - CIRCLE.r);
+  });
+
+  it('gives no guide for a whole circle', () => {
+    expect(guidePoints(1)).toEqual([]);
+    expect(guidePoints(0)).toEqual([]);
   });
 });

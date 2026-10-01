@@ -59,4 +59,17 @@ describe('Circle', () => {
     await view.rerender({ slices: equalSlices(3) });
     expect(animate).not.toHaveBeenCalled();
   });
+
+  it('draws one dashed guide per equal cut', () => {
+    const { container } = render(Circle, { props: { slices: equalSlices(3), label: 'm', guides: 5 } });
+    expect(container.querySelectorAll('[data-guide]')).toHaveLength(5);
+  });
+
+  it('outlines the marked slices on top of the slices', () => {
+    const { container } = render(Circle, { props: { slices: equalSlices(4), label: 'm', outlined: [false, true, true, false] } });
+    const outlined = container.querySelectorAll('[data-outlined]');
+    expect(outlined).toHaveLength(2);
+    const lastSlice = container.querySelectorAll('[data-slice]')[3];
+    expect(lastSlice.compareDocumentPosition(outlined[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
 });

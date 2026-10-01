@@ -55,3 +55,11 @@ export function wedgePath(start: number, end: number): string {
   const large = end - start > Math.PI ? 1 : 0;
   return `M ${cx} ${cy} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} Z`;
 }
+
+export function guidePoints(count: number): { x: number; y: number }[] {
+  if (count < 2) return [];
+  return Array.from({ length: count }, (_, i) => {
+    const angle = (2 * Math.PI * i) / count;
+    return { x: CIRCLE.cx + CIRCLE.r * Math.sin(angle), y: CIRCLE.cy - CIRCLE.r * Math.cos(angle) };
+  });
+}

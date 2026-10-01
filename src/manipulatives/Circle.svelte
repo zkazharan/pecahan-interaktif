@@ -1,6 +1,6 @@
 <script lang="ts">
   import { prefersReducedMotion } from '../lib/motion';
-  import { CIRCLE, sliceAngles, wedgePath } from './circle';
+  import { CIRCLE, guidePoints, sliceAngles, wedgePath } from './circle';
 
   type Props = {
     slices: readonly number[];
@@ -10,9 +10,11 @@
     size?: 'fill' | 'md' | 'lg';
     color?: string;
     decorative?: boolean;
+    guides?: number;
+    outlined?: readonly boolean[];
   };
 
-  let { slices, shaded = [], onshade, label, size = 'md', color = 'var(--frac-1)', decorative = false }: Props = $props();
+  let { slices, shaded = [], onshade, label, size = 'md', color = 'var(--frac-1)', decorative = false, guides = 0, outlined = [] }: Props = $props();
 
   let svg: SVGSVGElement | undefined = $state();
   let lastCount = 0;
@@ -61,6 +63,14 @@
       <path class="slice" data-slice={i} d={wedgePath(arc.start, arc.end)} style:fill={shaded[i] ? color : undefined} />
     {/if}
   {/each}
+  {#each arcs as arc, i (i)}
+    {#if outlined[i]}
+      <path class="outlined" data-outlined d={wedgePath(arc.start, arc.end)} />
+    {/if}
+  {/each}
+  {#each guidePoints(guides) as point, i (i)}
+    <line class="guide" data-guide x1={CIRCLE.cx} y1={CIRCLE.cy} x2={point.x} y2={point.y} />
+  {/each}
 </svg>
 
 <style>
@@ -99,6 +109,21 @@
     outline: none;
     stroke: var(--blue);
     stroke-width: 6;
+  }
+  .outlined {
+    fill: none;
+    stroke: var(--red);
+    stroke-width: 7;
+    stroke-dasharray: 12 8;
+    stroke-linejoin: round;
+    pointer-events: none;
+  }
+  .guide {
+    stroke: var(--red);
+    stroke-width: 4;
+    stroke-dasharray: 10 8;
+    stroke-linecap: round;
+    pointer-events: none;
   }
   @media (min-width: 1600px) {
     .md {
