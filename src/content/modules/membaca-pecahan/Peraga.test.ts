@@ -47,6 +47,26 @@ describe('membaca-pecahan Peraga', () => {
     expect(view.container.querySelectorAll('[data-tick]')).toHaveLength(4);
   });
 
+  it('sends the line card back to the pile when the fraction changes', async () => {
+    const { view, user } = setup(frac(2, 4));
+    for (let i = 0; i < 3; i++) await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    expect(view.container.querySelector('.pin [data-card="f"]')).not.toBeNull();
+    await view.rerender({ params: { f: frac(3, 4) } });
+    expect(screen.getByTestId('line-pile').querySelector('[data-card="f"]')).not.toBeNull();
+    expect(view.container.querySelector('.pin [data-card="f"]')).toBeNull();
+  });
+
+  it('forgets shading from a previous denominator', async () => {
+    const { view, user } = setup(frac(1, 4));
+    await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Potongan 4' }));
+    expect(screen.getByRole('button', { name: 'Potongan 4' })).toHaveAttribute('aria-pressed', 'true');
+    await view.rerender({ params: { f: frac(1, 3) } });
+    await view.rerender({ params: { f: frac(1, 4) } });
+    expect(screen.getByRole('button', { name: 'Potongan 4' })).toHaveAttribute('aria-pressed', 'false');
+  });
+
   it('keeps the displayed shading equal to the fraction from step 2', async () => {
     const { view, user } = setup();
     await user.click(next());

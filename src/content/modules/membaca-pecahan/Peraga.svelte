@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import FractionStepper from '../../../components/FractionStepper.svelte';
   import FractionText from '../../../components/FractionText.svelte';
   import Circle from '../../../manipulatives/Circle.svelte';
@@ -26,6 +27,15 @@
   const displayCount = $derived(displayShaded.filter(Boolean).length);
   const card: Card = $derived({ id: 'f', value: params.f });
   const linePlacement = $derived(Object.fromEntries(tickIds(1, d).map((id) => [id, placement[id] ?? null])));
+
+  $effect.pre(() => {
+    n;
+    d;
+    untrack(() => {
+      shaded = [];
+      placement = {};
+    });
+  });
 
   function fillFirst(): void {
     shaded = Array.from({ length: d }, (_, i) => i < n);
