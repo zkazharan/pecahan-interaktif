@@ -111,5 +111,22 @@ export async function solveCurrentTask(page: Page): Promise<void> {
     await dragTo(page, page.locator(`[data-card="${await attr('data-correct')}"]`), page.getByTestId('slot-pilihan'));
     return;
   }
+  if (kind === 'split') {
+    const total = Number(await attr('data-total'));
+    const bags = Number(await attr('data-bags'));
+    for (let i = 0; i < total; i++) {
+      await dragTo(page, page.locator('[data-tray-marble]').first(), page.getByTestId(`bag-${i % bags}`));
+    }
+    return;
+  }
+  if (kind === 'take') {
+    const take = Number(await attr('data-take'));
+    for (let i = 1; i <= take; i++) await page.getByRole('button', { name: `Kantong ${i}`, exact: true }).click();
+    return;
+  }
+  if (kind === 'count') {
+    await dragTo(page, page.locator(`[data-card="${await attr('data-correct')}"]`), page.getByTestId('slot-pilihan'));
+    return;
+  }
   throw new Error(`unknown task kind: ${kind}`);
 }

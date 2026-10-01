@@ -8,6 +8,7 @@ const MODULES = [
   { slug: 'pecahan-campuran', heading: '5 · Pecahan campuran' },
   { slug: 'jumlah-penyebut-sama', heading: '6 · Jumlah & kurang, penyebut sama' },
   { slug: 'jumlah-penyebut-beda', heading: '7 · Jumlah & kurang, penyebut beda' },
+  { slug: 'pecahan-dari-jumlah', heading: '8 · Pecahan dari suatu jumlah' },
 ];
 
 for (const mod of MODULES) {
@@ -66,7 +67,25 @@ test('jumlah-penyebut-beda: the sum row spans two wholes', async ({ page }) => {
   await expect(page.locator('[data-row-lines="hasil"] .whole-line')).toHaveCount(1);
 });
 
-test('home lists every module except 8 as ready', async ({ page }) => {
+test('pecahan-dari-jumlah: Tunjukkan deals the marbles evenly', async ({ page }) => {
+  await page.goto('./#/pecahan-dari-jumlah/peraga?n=12&k=3&take=2');
+  await page.getByRole('button', { name: 'Lanjut →' }).click();
+  await page.getByRole('button', { name: 'Tunjukkan' }).click();
+  for (let i = 0; i < 3; i++) await expect(page.getByTestId(`bag-${i}`).locator('[data-marble]')).toHaveCount(4);
+  await expect(page.locator('[data-tray-marble]')).toHaveCount(0);
+});
+
+test('jumlah-penyebut-beda: the stamp screen links on to module 8', async ({ page }) => {
+  await page.goto('./#/jumlah-penyebut-beda/latihan');
+  for (let i = 0; i < 5; i++) {
+    await solveCurrentTask(page);
+    await page.getByRole('button', { name: 'Cek jawaban' }).click();
+    await page.getByRole('button', { name: i === 4 ? 'Lihat hasil' : 'Soal berikutnya →' }).click();
+  }
+  await expect(page.getByRole('link', { name: 'Lanjut ke Modul 8 →' })).toBeVisible();
+});
+
+test('home lists all eight modules as ready', async ({ page }) => {
   await page.goto('./');
   for (const name of [
     /Membagi adil/,
@@ -76,8 +95,9 @@ test('home lists every module except 8 as ready', async ({ page }) => {
     /Pecahan campuran/,
     /penyebut sama/,
     /penyebut beda/,
+    /Pecahan dari suatu jumlah/,
   ]) {
     await expect(page.getByRole('link', { name })).toBeVisible();
   }
-  await expect(page.getByText('sedang disiapkan')).toHaveCount(1);
+  await expect(page.getByText('sedang disiapkan')).toHaveCount(0);
 });
