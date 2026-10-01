@@ -30,4 +30,35 @@ describe('pecahan-campuran TaskView', () => {
     expect(container.querySelector('[data-task-kind="mixed"]')).toHaveAttribute('data-correct', mixed.kind === 'mixed' ? mixed.correctId : '');
     expect(container.querySelectorAll('[data-card]')).toHaveLength(3);
   });
+
+  describe('mixed aid', () => {
+    const task = (): Extract<CampuranTask, { kind: 'mixed' }> => {
+      if (mixed.kind !== 'mixed') throw new Error('expected a mixed task');
+      return mixed;
+    };
+    const show = (feedback: 'none' | 'wrong' | 'shown' | 'correct') =>
+      render(TaskView, { props: { task: mixed, answer: emptyAnswer(mixed), onanswer: vi.fn(), feedback } });
+
+    it('hides the plates behind a toggle at first', () => {
+      const { container } = show('none');
+      expect(screen.getByRole('button', { name: 'bingung? lihat piringnya ↓' })).toBeInTheDocument();
+      expect(container.querySelector('[data-plate-piece]')).toBeNull();
+    });
+
+    it('opens the plates on toggle and shows the full plates', async () => {
+      const { container } = show('none');
+      await fireEvent.click(screen.getByRole('button', { name: 'bingung? lihat piringnya ↓' }));
+      const { n, d } = task().value;
+      const plates = [...container.querySelectorAll('[data-container^="plate-"]')];
+      expect(plates).toHaveLength(Math.ceil(n / d));
+      const full = plates.filter((plate) => plate.querySelectorAll('[data-plate-piece]').length === d);
+      expect(full).toHaveLength(Math.floor(n / d));
+      expect(screen.queryByRole('button', { name: 'bingung? lihat piringnya ↓' })).toBeNull();
+    });
+
+    it.each(['wrong', 'shown'] as const)('opens by itself on %s feedback', (feedback) => {
+      const { container } = show(feedback);
+      expect(container.querySelector('[data-plate-piece]')).not.toBeNull();
+    });
+  });
 });
