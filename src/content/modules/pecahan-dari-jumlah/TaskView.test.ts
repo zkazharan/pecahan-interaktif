@@ -71,6 +71,26 @@ describe('pecahan-dari-jumlah TaskView', () => {
     expect(Array.from(counts(container)).map((el) => el.textContent)).toEqual(['3', '3', '3', '3']);
   });
 
+  it('does not reveal the answer through counts when one bag is taken', () => {
+    const one: CountTask = { ...count, bags: 4, take: 1, total: 12, correctId: 'c1' };
+    const { container } = render(TaskView, { props: { task: one, answer: emptyAnswer(one), onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelectorAll('.bag.taken')).toHaveLength(1);
+    expect(counts(container)).toHaveLength(0);
+  });
+
+  it('shows the counts again once the answer is revealed with one bag taken', () => {
+    const one: CountTask = { ...count, bags: 4, take: 1, total: 12, correctId: 'c1' };
+    const { container } = render(TaskView, { props: { task: one, answer: emptyAnswer(one), onanswer: vi.fn(), feedback: 'shown' } });
+    expect(counts(container)).toHaveLength(4);
+  });
+
+  it('shows the counts on diff when more than one bag is taken', () => {
+    const two: CountTask = { ...count, bags: 4, take: 2, total: 12, correctId: 'c0' };
+    const { container } = render(TaskView, { props: { task: two, answer: emptyAnswer(two), onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelectorAll('.bag.taken')).toHaveLength(2);
+    expect(counts(container)).toHaveLength(4);
+  });
+
   it('shows the aid when the answer is revealed', () => {
     const { container } = render(TaskView, { props: { task: count, answer: emptyAnswer(count), onanswer: vi.fn(), feedback: 'shown' } });
     expect(container.querySelectorAll('.bag.taken')).toHaveLength(3);

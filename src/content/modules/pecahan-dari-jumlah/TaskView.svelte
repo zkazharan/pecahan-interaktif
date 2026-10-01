@@ -12,6 +12,7 @@
 
   const locked = $derived(feedback === 'correct' || feedback === 'shown');
   const showAid = $derived(diff || feedback === 'shown');
+  const showCounts = $derived(showAid && (task.kind !== 'count' || task.take > 1 || feedback === 'shown'));
   const firstTaken = $derived(task.kind === 'split' ? [] : Array.from({ length: task.bags }, (_, i) => i < task.take));
 
   function toggle(index: number): void {
@@ -42,7 +43,7 @@
     {/if}
   {:else}
     <p class="question"><FractionText value={frac(task.take, task.bags)} /> dari {task.total} kelereng = ?</p>
-    <Collection state={answer.collection} locked onmove={() => {}} taken={showAid ? firstTaken : []} counts={showAid} />
+    <Collection state={answer.collection} locked onmove={() => {}} taken={showAid ? firstTaken : []} counts={showCounts} />
     <CardSlots cards={task.cards} slots={PICK_SLOTS} placement={answer.placement} onplace={(placement) => onanswer({ ...answer, placement })} {locked} />
   {/if}
 </div>
