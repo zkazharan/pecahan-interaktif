@@ -100,4 +100,10 @@ describe('Plates', () => {
     await fireEvent.keyDown(piece, { key: ' ' });
     expect(animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('scale(0.6)'))).toHaveLength(0);
   });
+
+  it('marks flagged plates', () => {
+    render(Plates, { props: { capacity: 4, state: { plates: [2, 3], tray: 0 }, onmove: () => {}, flagged: [false, true] } });
+    expect(screen.getByTestId('plate-0')).not.toHaveAttribute('data-flagged');
+    expect(screen.getByTestId('plate-1')).toHaveAttribute('data-flagged');
+  });
 });

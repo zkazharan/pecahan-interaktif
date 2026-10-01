@@ -12,9 +12,10 @@
     placement: Placement;
     onplace: (placement: Placement) => void;
     locked?: boolean;
+    flagged?: readonly string[];
   };
 
-  let { cards, slots, placement, onplace, locked = false }: Props = $props();
+  let { cards, slots, placement, onplace, locked = false, flagged = [] }: Props = $props();
 
   let root: HTMLElement | undefined = $state();
   const flip = useCardFlip(() => root, () => placement);
@@ -39,7 +40,13 @@
     {#each slots as slot (slot.id)}
       {@const cardId = placement[slot.id]}
       {@const card = cardId ? byId.get(cardId) : undefined}
-      <li class="slot" data-testid={`slot-${slot.id}`} use:dropTarget={{ controller, id: slot.id, label: slot.label }}>
+      <li
+        class="slot"
+        class:flagged={flagged.includes(slot.id)}
+        data-flagged={flagged.includes(slot.id) ? '' : undefined}
+        data-testid={`slot-${slot.id}`}
+        use:dropTarget={{ controller, id: slot.id, label: slot.label }}
+      >
         <span class="slot-label" class:valued={slot.value}>{#if slot.value}<FractionText value={slot.value} />{:else}{slot.label}{/if}</span>
         {#if card}
           {@render cardView(card)}
@@ -82,6 +89,10 @@
     border: 3px dashed var(--ink-soft);
     border-radius: var(--radius);
     background: rgba(255, 255, 255, 0.55);
+  }
+  .slot.flagged {
+    border-color: var(--red);
+    border-style: dashed;
   }
   .slot-label {
     position: relative;

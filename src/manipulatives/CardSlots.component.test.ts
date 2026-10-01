@@ -157,4 +157,12 @@ describe('CardSlots', () => {
       expect(animate).not.toHaveBeenCalled();
     });
   });
+
+  it('marks flagged slots', () => {
+    render(CardSlots, {
+      props: { cards: CARDS, slots: SLOTS, placement: emptyPlacement(SLOTS.map((s) => s.id)), onplace: () => {}, flagged: [SLOTS[0].id] },
+    });
+    expect(screen.getByTestId(`slot-${SLOTS[0].id}`)).toHaveAttribute('data-flagged');
+    expect(screen.getByTestId(`slot-${SLOTS[1].id}`)).not.toHaveAttribute('data-flagged');
+  });
 });

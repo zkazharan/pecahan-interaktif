@@ -1,6 +1,6 @@
 import { compare, type Fraction } from '../lib/fraction';
 
-export type BarRow = { id: string; value: Fraction; color: string; cut?: number; wholes?: number };
+export type BarRow = { id: string; value: Fraction; color: string; cut?: number; wholes?: number; hideLabel?: boolean };
 export type Stacking = { pieceOf: string; onto: string } | null;
 
 export const MAX_PARTS = 24;

@@ -15,9 +15,10 @@
     onmove: (state: PlatesState) => void;
     locked?: boolean;
     color?: string;
+    flagged?: readonly boolean[];
   };
 
-  let { capacity, state: placement, onmove, locked = false, color = 'var(--frac-1)' }: Props = $props();
+  let { capacity, state: placement, onmove, locked = false, color = 'var(--frac-1)', flagged = [] }: Props = $props();
 
   let root: HTMLElement | undefined = $state();
   let userMove = false;
@@ -70,6 +71,8 @@
     {#each placement.plates as count, i (i)}
       <div
         class="plate"
+        class:flagged={flagged[i]}
+        data-flagged={flagged[i] ? '' : undefined}
         data-container={plateId(i)}
         data-testid={plateId(i)}
         use:dropTarget={{ controller, id: plateId(i), label: `piring ${i + 1}`, accepts: plateAccepts(i) }}
@@ -152,6 +155,10 @@
     fill: #fff;
     stroke: var(--ink);
     stroke-width: 4;
+  }
+  .plate.flagged .rim {
+    stroke: var(--red);
+    stroke-dasharray: 12 8;
   }
   .slot {
     fill: none;

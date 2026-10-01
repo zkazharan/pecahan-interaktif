@@ -1,10 +1,12 @@
 <script lang="ts">
+  import FractionText from '../components/FractionText.svelte';
+  import { formatFraction } from '../lib/fraction';
   import { dropTarget } from '../lib/drag/actions';
   import DragCard from './DragCard.svelte';
   import { createCardDrop } from './cardDrop';
   import { useCardFlip } from './cardFlip.svelte';
   import { PILE, pileCards, type Card, type Placement } from './cardSlots';
-  import { LINE, staggerRows, tickIds, tickIndexOf, tickX } from './numberLine';
+  import { LINE, staggerRows, tickIds, tickIndexOf, tickValue, tickX } from './numberLine';
 
   type Mark = { perUnit: number; color: string; side: 'above' | 'below' };
 
@@ -16,9 +18,10 @@
     onplace: (placement: Placement) => void;
     locked?: boolean;
     marks?: Mark[];
+    showValues?: boolean;
   };
 
-  let { max, perUnit, cards, placement, onplace, locked = false, marks = [] }: Props = $props();
+  let { max, perUnit, cards, placement, onplace, locked = false, marks = [], showValues = false }: Props = $props();
 
   let root: HTMLElement | undefined = $state();
 
@@ -92,6 +95,16 @@
         {/if}
       {/each}
     </div>
+    {#if showValues}
+      <div class="placed-values" aria-hidden="true">
+        {#each placed as p (p.card.id)}
+          {@const value = tickValue(p.index, perUnit)}
+          <span class="placed-value" data-placed-value={formatFraction(value)} style:left={left(p.index)}>
+            <FractionText {value} size="sm" />
+          </span>
+        {/each}
+      </div>
+    {/if}
     {#each ticks as id, k (id)}
       <div
         class="tick-target"
@@ -185,6 +198,16 @@
     position: absolute;
     top: 0;
     translate: -50% 0;
+  }
+  .placed-values {
+    position: relative;
+    height: 3.2em;
+  }
+  .placed-value {
+    position: absolute;
+    top: 0;
+    translate: -50% 0;
+    color: var(--red);
   }
   .tick-target {
     position: absolute;

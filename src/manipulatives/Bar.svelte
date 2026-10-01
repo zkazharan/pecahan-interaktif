@@ -112,7 +112,7 @@
         width={unitWidth(units) * (row.wholes ?? 1)}
         height={BAR.rowHeight}
         data-testid={`bar-target-${row.id}`}
-        use:dropTarget={{ controller, id: row.id, label: `pita ${spokenFraction(shown)}`, accepts: accepts(row.id) }}
+        use:dropTarget={{ controller, id: row.id, label: row.hideLabel ? 'pita' : `pita ${spokenFraction(shown)}`, accepts: accepts(row.id) }}
       />
       {#each dividerXs(row, units) as x (x)}
         <line class="divider" x1={BAR.x0 + x} x2={BAR.x0 + x} y1={y} y2={y + BAR.rowHeight} />
@@ -120,11 +120,13 @@
       {#if stacking?.pieceOf === row.id}
         <rect class="ghost" data-ghost x={BAR.x0 + 6} y={y + 6} width={Math.max(pieceWidth(row.value, units) - 12, 0)} height={BAR.rowHeight - 12} />
       {/if}
-      <g class="label" aria-hidden="true">
-        <text x={BAR.labelX} y={y + BAR.rowHeight / 2 - 8}>{shown.n}</text>
-        <line x1={BAR.labelX - 24} x2={BAR.labelX + 24} y1={y + BAR.rowHeight / 2} y2={y + BAR.rowHeight / 2} />
-        <text x={BAR.labelX} y={y + BAR.rowHeight / 2 + 34}>{shown.d}</text>
-      </g>
+      {#if !row.hideLabel}
+        <g class="label" aria-hidden="true">
+          <text x={BAR.labelX} y={y + BAR.rowHeight / 2 - 8}>{shown.n}</text>
+          <line x1={BAR.labelX - 24} x2={BAR.labelX + 24} y1={y + BAR.rowHeight / 2} y2={y + BAR.rowHeight / 2} />
+          <text x={BAR.labelX} y={y + BAR.rowHeight / 2 + 34}>{shown.d}</text>
+        </g>
+      {/if}
     </g>
   {/each}
 
@@ -136,7 +138,7 @@
         class="piece"
         data-piece={row.id}
         class:grab={canDrag}
-        use:draggable={{ controller, id: PIECE + row.id, label: `Potongan ${spokenFraction(shownValue(row))}`, disabled: !canDrag }}
+        use:draggable={{ controller, id: PIECE + row.id, label: row.hideLabel ? 'Potongan' : `Potongan ${spokenFraction(shownValue(row))}`, disabled: !canDrag }}
       >
         <rect class="hit" x={hit.x} y={hit.y} width={hit.width} height={hit.height} />
         <rect width={pieceWidth(row.value, units)} height={BAR.rowHeight} style:fill={row.color} />

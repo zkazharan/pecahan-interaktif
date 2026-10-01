@@ -170,4 +170,11 @@ describe('Bar', () => {
       expect(animate).not.toHaveBeenCalled();
     });
   });
+
+  it('hides the label of a row with hideLabel', () => {
+    const { container } = render(Bar, {
+      props: { rows: [{ id: 'a', value: frac(1, 3), color: 'red', hideLabel: true }], stacking: null },
+    });
+    expect(container.querySelector('[data-row="a"] .label')).toBeNull();
+  });
 });

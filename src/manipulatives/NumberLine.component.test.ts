@@ -148,4 +148,21 @@ describe('NumberLine', () => {
       expect(slides(animate)).toBe(0);
     });
   });
+
+  it('labels where each placed card sits when showValues is on', () => {
+    const cards = [{ id: 'c0', value: frac(3, 4) }];
+    const { container } = render(NumberLine, {
+      props: { max: 1, perUnit: 4, cards, placement: { ...emptyPlacement(tickIds(1, 4)), t2: 'c0' }, onplace: () => {}, showValues: true },
+    });
+    const value = container.querySelector('[data-placed-value]');
+    expect(value?.getAttribute('data-placed-value')).toBe('2/4');
+  });
+
+  it('shows no placed values by default', () => {
+    const cards = [{ id: 'c0', value: frac(3, 4) }];
+    const { container } = render(NumberLine, {
+      props: { max: 1, perUnit: 4, cards, placement: { ...emptyPlacement(tickIds(1, 4)), t2: 'c0' }, onplace: () => {} },
+    });
+    expect(container.querySelector('[data-placed-value]')).toBeNull();
+  });
 });
