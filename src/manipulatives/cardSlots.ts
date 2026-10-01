@@ -7,7 +7,7 @@ export type CardFace =
   | { kind: 'shape'; slices: number[]; shaded: boolean[]; description: string };
 
 export type Card = { id: string; value: Fraction; face?: CardFace; accent?: string };
-export type Slot = { id: string; label: string };
+export type Slot = { id: string; label: string; value?: Fraction };
 export type Placement = Readonly<Record<string, string | null>>;
 
 export const PILE = 'pile';

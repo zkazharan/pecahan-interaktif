@@ -49,6 +49,14 @@ describe('CardSlots', () => {
     expect(screen.getByTestId('pile').querySelectorAll('[data-card]')).toHaveLength(2);
   });
 
+  it('shows a stacked fraction as the slot label when the slot has a value', () => {
+    const slots: Slot[] = [{ id: 'p0', label: 'sama dengan setengah', value: frac(1, 2) }];
+    render(CardSlots, { props: { cards: [{ id: 'c0', value: frac(2, 4) }], slots, placement: { p0: null }, onplace: vi.fn() } });
+    const slot = screen.getByTestId('slot-p0');
+    expect(slot.querySelector('[role="img"][aria-label="setengah"]')).not.toBeNull();
+    expect(slot.textContent).not.toContain('sama dengan');
+  });
+
   it('locks cards when told to', async () => {
     const onplace = vi.fn();
     render(CardSlots, { props: { cards: CARDS, slots: SLOTS, placement: emptyPlacement(['s1', 's2', 's3']), onplace, locked: true } });

@@ -3,6 +3,7 @@
   import DragCard from './DragCard.svelte';
   import { createCardDrop } from './cardDrop';
   import { useCardFlip } from './cardFlip.svelte';
+  import FractionText from '../components/FractionText.svelte';
   import { PILE, pileCards, type Card, type Placement, type Slot } from './cardSlots';
 
   type Props = {
@@ -39,7 +40,7 @@
       {@const cardId = placement[slot.id]}
       {@const card = cardId ? byId.get(cardId) : undefined}
       <li class="slot" data-testid={`slot-${slot.id}`} use:dropTarget={{ controller, id: slot.id, label: slot.label }}>
-        <span class="slot-label">{slot.label}</span>
+        <span class="slot-label">{#if slot.value}<FractionText value={slot.value} />{:else}{slot.label}{/if}</span>
         {#if card}
           {@render cardView(card)}
         {/if}
