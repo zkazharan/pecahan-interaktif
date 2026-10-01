@@ -49,4 +49,17 @@ describe('NumberLine', () => {
     expect(pins.filter((pin) => pin.classList.contains('high'))).toHaveLength(1);
     expect(screen.getByTestId('line-pile').querySelectorAll('[data-card]')).toHaveLength(0);
   });
+
+  it('anchors the first and last targets inward at half a division', () => {
+    const { container } = render(NumberLine, {
+      props: { max: 1, perUnit: 4, cards: [], placement: emptyPlacement(tickIds(1, 4)), onplace: vi.fn() },
+    });
+    const target = (id: string) => container.querySelector<HTMLElement>(`[data-tick="${id}"]`)!;
+    expect(target('t0').dataset.edge).toBe('start');
+    expect(target('t4').dataset.edge).toBe('end');
+    expect(target('t2').dataset.edge).toBeUndefined();
+    expect(target('t0').style.width).toBe('11.25%');
+    expect(target('t4').style.width).toBe('11.25%');
+    expect(target('t2').style.width).toBe('22.5%');
+  });
 });

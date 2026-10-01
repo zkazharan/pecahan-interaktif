@@ -36,6 +36,11 @@
   function left(k: number): string {
     return `${(tickX(k, max, perUnit) / LINE.viewWidth) * 100}%`;
   }
+
+  function targetWidth(k: number): string {
+    const division = LINE.width / total / LINE.viewWidth;
+    return `${(k === 0 || k === total ? division / 2 : division) * 100}%`;
+  }
 </script>
 
 <div class="number-line" bind:this={root}>
@@ -62,8 +67,9 @@
       <div
         class="tick-target"
         data-tick={id}
+        data-edge={k === 0 ? 'start' : k === total ? 'end' : undefined}
         style:left={left(k)}
-        style:width={`${(LINE.width / total / LINE.viewWidth) * 100}%`}
+        style:width={targetWidth(k)}
         use:dropTarget={{ controller, id, label: `tanda ke-${k} dari ${total}` }}
       ></div>
     {/each}
@@ -80,8 +86,10 @@
 
 <style>
   .number-line {
+    --pin-half: 32px;
     display: grid;
     gap: 1em;
+    padding-inline: max(0px, calc((var(--pin-half) - 0.05 * 100%) / 0.9));
   }
   .line-area {
     --pin-card: 80px;
@@ -141,11 +149,20 @@
     translate: -50% 0;
     pointer-events: none;
   }
+  .tick-target[data-edge='start'] {
+    translate: 0;
+  }
+  .tick-target[data-edge='end'] {
+    translate: -100% 0;
+  }
   .tick-target:global([data-drop-hover]) {
     outline: none;
     background: rgba(29, 78, 216, 0.14);
   }
   @media (min-width: 1600px) {
+    .number-line {
+      --pin-half: 44px;
+    }
     .line-area {
       --pin-card: 108px;
     }
