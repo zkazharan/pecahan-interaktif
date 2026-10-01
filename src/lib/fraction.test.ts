@@ -47,11 +47,12 @@ describe('gcd and lcm', () => {
 
 describe('simplify', () => {
   it('returns lowest terms with the same value for every fraction up to /24', () => {
+    const mismatches: string[] = [];
     for (const f of ALL) {
       const s = simplify(f);
-      expect(equivalent(s, f)).toBe(true);
-      if (s.n > 0) expect(gcd(s.n, s.d)).toBe(1);
+      if (!equivalent(s, f) || (s.n > 0 && gcd(s.n, s.d) !== 1)) mismatches.push(`${f.n}/${f.d}`);
     }
+    expect(mismatches).toEqual([]);
   });
 
   it('maps zero to 0/1', () => {
@@ -61,12 +62,14 @@ describe('simplify', () => {
 
 describe('compare', () => {
   it('agrees with decimal comparison for every pair up to /24', () => {
+    const mismatches: string[] = [];
     for (const a of ALL) {
       for (const b of ALL) {
         const expected = Math.sign(toNumber(a) - toNumber(b));
-        expect(compare(a, b)).toBe(expected === 0 ? 0 : expected);
+        if (compare(a, b) !== (expected === 0 ? 0 : expected)) mismatches.push(`${a.n}/${a.d} vs ${b.n}/${b.d}`);
       }
     }
+    expect(mismatches).toEqual([]);
   });
 
   it('says 1/4 is smaller than 1/3', () => {
@@ -84,13 +87,15 @@ describe('equivalent and sameForm', () => {
 
 describe('add and subtract', () => {
   it('adds over the lcm denominator and matches the decimal sum', () => {
+    const mismatches: string[] = [];
     for (const a of PROPER_UP_TO_12) {
       for (const b of PROPER_UP_TO_12) {
         const sum = add(a, b);
-        expect(sum.d).toBe(lcm(a.d, b.d));
-        expect(Math.abs(toNumber(sum) - (toNumber(a) + toNumber(b)))).toBeLessThan(1e-9);
+        const off = sum.d !== lcm(a.d, b.d) || !(Math.abs(toNumber(sum) - (toNumber(a) + toNumber(b))) < 1e-9);
+        if (off) mismatches.push(`${a.n}/${a.d} + ${b.n}/${b.d}`);
       }
     }
+    expect(mismatches).toEqual([]);
   });
 
   it('handles the textbook cases', () => {
