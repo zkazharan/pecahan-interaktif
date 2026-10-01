@@ -9,6 +9,8 @@ describe('pecahan-dari-jumlah tasks', () => {
       const tasks = generateTasks(createRng(seed));
       expect(tasks.map((t) => t.kind)).toEqual(['split', 'take', 'count', 'split', 'count']);
       expect(tasks[0].kind === 'split' && tasks[3].kind === 'split' && tasks[0].bags !== tasks[3].bags).toBe(true);
+      const shares = [tasks[1], tasks[2], tasks[4]].map((t) => (t.kind === 'split' ? '' : `${t.total}-${t.bags}-${t.take}`));
+      expect(new Set(shares).size).toBe(3);
       for (const task of tasks) {
         expect(task.total).toBeLessThanOrEqual(24);
         expect(task.total % task.bags).toBe(0);
@@ -42,11 +44,26 @@ describe('pecahan-dari-jumlah tasks', () => {
   });
 
   it('always offers two different wrong counts', () => {
-    expect(countDistractors(12, 3, 1)).toEqual([8, 12]);
-    expect(countDistractors(8, 2, 1)).toEqual([8, 1]);
+    expect(countDistractors(12, 3, 1)).toEqual([1, 8]);
+    expect(countDistractors(8, 2, 1)).toEqual([1, 8]);
     for (let bags = 2; bags <= 6; bags++) {
       for (let per = 2; per <= Math.min(4, Math.floor(24 / bags)); per++) {
         for (let take = 1; take < bags; take++) expect(countDistractors(bags * per, bags, take)).toHaveLength(2);
+      }
+    }
+  });
+
+  it('always offers the numerator and avoids the whole total when possible', () => {
+    for (let bags = 2; bags <= 6; bags++) {
+      for (let per = 2; per <= Math.min(4, Math.floor(24 / bags)); per++) {
+        for (let take = 1; take < bags; take++) {
+          const total = bags * per;
+          const correct = take * per;
+          const out = countDistractors(total, bags, take);
+          expect(out).toContain(take);
+          const others = [per, total - correct, correct + per].filter((v, i, all) => v > 0 && v !== correct && v !== take && v !== total && all.indexOf(v) === i);
+          if (others.length >= 1) expect(out).not.toContain(total);
+        }
       }
     }
   });
@@ -60,6 +77,16 @@ describe('pecahan-dari-jumlah tasks', () => {
       hint: 'Setiap kantong harus berisi sama banyak.',
     });
     expect(checkTask(task, { ...emptyAnswer(task), collection: dealAll(6, 3) }).correct).toBe(true);
+  });
+
+  it('hints at the one-bag count when a count task is wrong', () => {
+    const task = generateTasks(createRng(1))[2];
+    if (task.kind !== 'count') throw new Error('expected count task');
+    const wrong = task.cards.find((c) => c.id !== task.correctId)!;
+    expect(checkTask(task, { ...emptyAnswer(task), placement: { pilihan: wrong.id } })).toEqual({
+      correct: false,
+      hint: 'Cari isi satu kantong dulu, lalu ambil sebanyak pembilang.',
+    });
   });
 
   it('checks how many bags are taken', () => {

@@ -28,11 +28,23 @@ function share(rng: Rng): Share {
   return { bags, total: bags * per, take: rng.int(1, bags - 1) };
 }
 
+function sameShare(a: Share, b: Share): boolean {
+  return a.total === b.total && a.bags === b.bags && a.take === b.take;
+}
+
+function freshShare(rng: Rng, used: readonly Share[]): Share {
+  for (let attempt = 0; attempt < 1000; attempt++) {
+    const candidate = share(rng);
+    if (!used.some((other) => sameShare(candidate, other))) return candidate;
+  }
+  throw new Error('could not draw a different share');
+}
+
 export function countDistractors(total: number, bags: number, take: number): number[] {
   const per = total / bags;
   const correct = take * per;
   const out: number[] = [];
-  for (const value of [per, total - correct, total, correct + per, take]) {
+  for (const value of [take, per, total - correct, correct + per, total]) {
     if (value > 0 && value !== correct && !out.includes(value)) out.push(value);
   }
   return out.slice(0, 2);
@@ -56,12 +68,14 @@ export function generateTasks(rng: Rng): ShareTask[] {
   const firstBags = rng.int(2, 4);
   const secondBags = 2 + ((firstBags - 2 + rng.int(1, 2)) % 3);
   const takeShare = share(rng);
+  const firstCount = freshShare(rng, [takeShare]);
+  const secondCount = freshShare(rng, [takeShare, firstCount]);
   return [
     splitTask(rng, firstBags),
     { kind: 'take', ...takeShare },
-    countTask(rng, share(rng)),
+    countTask(rng, firstCount),
     splitTask(rng, secondBags),
-    countTask(rng, share(rng)),
+    countTask(rng, secondCount),
   ];
 }
 
@@ -95,5 +109,5 @@ export function checkTask(task: ShareTask, answer: ShareAnswer): CheckResult {
   }
   return answer.placement.pilihan === task.correctId
     ? { correct: true, hint: '' }
-    : { correct: false, hint: 'Hitung kelereng di kantong yang diambil saja.' };
+    : { correct: false, hint: 'Cari isi satu kantong dulu, lalu ambil sebanyak pembilang.' };
 }
