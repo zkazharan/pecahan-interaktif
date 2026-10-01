@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { frac } from './fraction';
-import { parseField, withinLimits, type FractionLimits } from './limits';
+import { minNumerator, parseField, withinLimits, type FractionLimits } from './limits';
 
 const LIMITS: FractionLimits = { dMin: 1, dMax: 12, nMin: 1, nMax: (d) => d };
 
@@ -24,5 +24,20 @@ describe('withinLimits', () => {
     expect(withinLimits(frac(1, 13), LIMITS)).toBe(false);
     expect(withinLimits(frac(0, 3), LIMITS)).toBe(false);
     expect(withinLimits(frac(4, 3), LIMITS)).toBe(false);
+  });
+});
+
+describe('numerator floor that depends on the denominator', () => {
+  const improper: FractionLimits = { dMin: 2, dMax: 8, nMin: (d) => d + 1, nMax: (d) => 3 * d };
+
+  it('reads a fixed or a computed floor', () => {
+    expect(minNumerator(LIMITS, 5)).toBe(1);
+    expect(minNumerator(improper, 4)).toBe(5);
+  });
+
+  it('checks improper fractions', () => {
+    expect(withinLimits(frac(5, 4), improper)).toBe(true);
+    expect(withinLimits(frac(4, 4), improper)).toBe(false);
+    expect(withinLimits(frac(13, 4), improper)).toBe(false);
   });
 });

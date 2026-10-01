@@ -70,6 +70,15 @@ describe('FractionStepper', () => {
     expect(onchange).toHaveBeenCalledWith({ n: 1, d: 6 });
   });
 
+  it('respects a numerator floor that follows the denominator', async () => {
+    const onchange = vi.fn();
+    const improper: FractionLimits = { dMin: 2, dMax: 8, nMin: (d) => d + 1, nMax: (d) => 3 * d };
+    render(FractionStepper, { props: { label: 'Pecahan', value: frac(5, 4), limits: improper, onchange } });
+    expect(screen.getByRole('button', { name: 'Kurangi pembilang Pecahan' })).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Tambah penyebut Pecahan' }));
+    expect(onchange).toHaveBeenCalledWith({ n: 6, d: 5 });
+  });
+
   it('reverts typed values that are broken or out of range', async () => {
     const { onchange } = setup();
     const input = screen.getByLabelText('Penyebut Pecahan A') as HTMLInputElement;

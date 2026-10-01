@@ -1,6 +1,6 @@
 <script lang="ts">
   import { frac, type Fraction } from '../lib/fraction';
-  import { parseField, type FractionLimits } from '../lib/limits';
+  import { minNumerator, parseField, type FractionLimits } from '../lib/limits';
 
   let {
     label,
@@ -10,14 +10,14 @@
   }: { label: string; value: Fraction; limits: FractionLimits; onchange: (value: Fraction) => void } = $props();
 
   function setN(n: number): boolean {
-    if (n < limits.nMin || n > limits.nMax(value.d)) return false;
+    if (n < minNumerator(limits, value.d) || n > limits.nMax(value.d)) return false;
     onchange(frac(n, value.d));
     return true;
   }
 
   function setD(d: number): boolean {
     if (d < limits.dMin || d > limits.dMax) return false;
-    const n = Math.min(Math.max(value.n, limits.nMin), limits.nMax(d));
+    const n = Math.min(Math.max(value.n, minNumerator(limits, d)), limits.nMax(d));
     onchange(frac(n, d));
     return true;
   }
@@ -32,7 +32,7 @@
 <fieldset class="stepper">
   <legend>{label}</legend>
   <div class="row">
-    <button type="button" class="step" aria-label={`Kurangi pembilang ${label}`} disabled={value.n <= limits.nMin} onclick={() => setN(value.n - 1)}>−</button>
+    <button type="button" class="step" aria-label={`Kurangi pembilang ${label}`} disabled={value.n <= minNumerator(limits, value.d)} onclick={() => setN(value.n - 1)}>−</button>
     <input aria-label={`Pembilang ${label}`} inputmode="numeric" value={value.n} onchange={(e) => typed(e, setN, value.n)} />
     <button type="button" class="step" aria-label={`Tambah pembilang ${label}`} disabled={value.n >= limits.nMax(value.d)} onclick={() => setN(value.n + 1)}>+</button>
   </div>
