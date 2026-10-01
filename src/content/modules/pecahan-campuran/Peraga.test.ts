@@ -45,6 +45,32 @@ describe('pecahan-campuran Peraga', () => {
     expect(screen.getByTestId('plate-2')).toBeInTheDocument();
   });
 
+  it('restarts when the denominator changes but the plate and piece counts stay', async () => {
+    const { view, user } = setup(frac(7, 4));
+    await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    await view.rerender({ params: { f: frac(7, 6) } });
+    expect(trayCount()).toBe(7);
+  });
+
+  it('regroups at step 2 when the denominator changes', async () => {
+    const { view, user } = setup(frac(7, 4));
+    await user.click(next());
+    await user.click(next());
+    await view.rerender({ params: { f: frac(7, 6) } });
+    expect(screen.getByTestId('plate-0').querySelectorAll('[data-plate-piece]')).toHaveLength(6);
+    expect(screen.getByText(/1 piring penuh/)).toBeInTheDocument();
+  });
+
+  it('does not bring an old arrangement back when returning to a fraction', async () => {
+    const { view, user } = setup(frac(5, 4));
+    await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    await view.rerender({ params: { f: frac(7, 3) } });
+    await view.rerender({ params: { f: frac(5, 4) } });
+    expect(trayCount()).toBe(5);
+  });
+
   it('keeps the numerator above the denominator', async () => {
     const { onparams, user } = setup();
     expect(screen.getByRole('button', { name: 'Kurangi pembilang Pecahan' })).toBeDisabled();

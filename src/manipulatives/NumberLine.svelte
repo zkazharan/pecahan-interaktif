@@ -74,14 +74,16 @@
       ></div>
     {/each}
   </div>
-  <div class="pile" data-testid="line-pile" use:dropTarget={{ controller, id: PILE, label: 'tumpukan kartu' }}>
-    {#each pile as id (id)}
-      {@const card = byId.get(id)}
-      {#if card}
-        <DragCard {card} {controller} {locked} />
-      {/if}
-    {/each}
-  </div>
+  {#if !locked || pile.length > 0}
+    <div class="pile" data-testid="line-pile" use:dropTarget={{ controller, id: PILE, label: 'tumpukan kartu' }}>
+      {#each pile as id (id)}
+        {@const card = byId.get(id)}
+        {#if card}
+          <DragCard {card} {controller} {locked} />
+        {/if}
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>

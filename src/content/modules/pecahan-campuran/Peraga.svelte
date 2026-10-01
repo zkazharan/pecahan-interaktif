@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import FractionStepper from '../../../components/FractionStepper.svelte';
   import FractionText from '../../../components/FractionText.svelte';
   import MixedText from '../../../components/MixedText.svelte';
@@ -7,7 +8,7 @@
   import Plates from '../../../manipulatives/Plates.svelte';
   import type { Card } from '../../../manipulatives/cardSlots';
   import { tickId, tickIds } from '../../../manipulatives/numberLine';
-  import { fillGreedy, fullPlates, startPlates, totalPieces, type PlatesState } from '../../../manipulatives/plates';
+  import { fillGreedy, startPlates, type PlatesState } from '../../../manipulatives/plates';
   import PeragaFrame from '../../../pages/PeragaFrame.svelte';
   import type { PeragaProps } from '../../types';
   import { MIXED_LIMITS, plateCountFor, type MixedParams } from './params';
@@ -23,11 +24,15 @@
   const d = $derived(params.f.d);
   const plateCount = $derived(plateCountFor(params.f));
   const mixed = $derived(toMixed(params.f));
-  const platesNow = $derived(
-    plates && plates.plates.length === plateCount && totalPieces(plates) === n ? plates : startPlates(n, plateCount),
-  );
+  const platesNow = $derived(step >= 2 ? fillGreedy(n, plateCount, d) : (plates ?? startPlates(n, plateCount)));
   const card: Card = $derived({ id: 'f', value: params.f });
   const linePlacement = $derived({ ...Object.fromEntries(tickIds(plateCount, d).map((id) => [id, null])), [tickId(n)]: 'f' });
+
+  $effect.pre(() => {
+    n;
+    d;
+    untrack(() => (plates = null));
+  });
 
   function fill(): void {
     plates = fillGreedy(n, plateCount, d);
@@ -36,7 +41,7 @@
   function goTo(next: number): void {
     step = next;
     if (next === 0) plates = null;
-    if (next >= 2 && (platesNow.tray > 0 || fullPlates(platesNow, d) !== mixed.whole)) fill();
+    if (next >= 2) fill();
   }
 </script>
 

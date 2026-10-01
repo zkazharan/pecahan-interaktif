@@ -19,6 +19,15 @@ describe('NumberLine', () => {
     expect(container.querySelectorAll('[data-tick]')).toHaveLength(7);
   });
 
+  it('hides the empty pile when locked and shows it otherwise', () => {
+    const props = { max: 1, perUnit: 4, cards: [CARDS[0]], placement: { ...emptyPlacement(tickIds(1, 4)), t1: 'c0' }, onplace: vi.fn() };
+    const locked = render(NumberLine, { props: { ...props, locked: true } });
+    expect(locked.queryByTestId('line-pile')).toBeNull();
+    locked.unmount();
+    const open = render(NumberLine, { props });
+    expect(open.getByTestId('line-pile')).toBeInTheDocument();
+  });
+
   it('places a card on a tick with the keyboard', async () => {
     const onplace = vi.fn();
     render(NumberLine, { props: { max: 1, perUnit: 4, cards: CARDS, placement: emptyPlacement(tickIds(1, 4)), onplace } });
