@@ -110,9 +110,22 @@ describe('Collection', () => {
     expect(screen.getByTestId('marble-tray')).toBeInTheDocument();
   });
 
-  it('locks every marble when told to', () => {
+  it('locks tray marbles and offers no bag handles when told to', () => {
     render(Collection, { props: { state: { bags: [1], tray: 1 }, onmove: vi.fn(), locked: true } });
-    for (const marble of screen.getAllByRole('button')) expect(marble).toHaveAttribute('aria-disabled', 'true');
+    const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toHaveAttribute('aria-disabled', 'true');
+    expect(screen.queryByRole('button', { name: /Kelereng di kantong/ })).toBeNull();
+  });
+
+  it('records where the bag handle was grabbed for the drag marble', async () => {
+    render(Collection, { props: { state: { bags: [2], tray: 0 }, onmove: vi.fn() } });
+    const handle = screen.getByRole('button', { name: 'Kelereng di kantong 1' });
+    await fireEvent(handle, new MouseEvent('pointerdown', { clientX: 30, clientY: 40, bubbles: true }));
+    expect(handle.style.getPropertyValue('--gx')).toBe('30px');
+    expect(handle.style.getPropertyValue('--gy')).toBe('40px');
+    await fireEvent(handle, new MouseEvent('pointerup', { clientX: 30, clientY: 40, bubbles: true }));
+    expect(handle.style.getPropertyValue('--gx')).toBe('');
   });
 
   it('pops in marbles the program puts in a bag', async () => {

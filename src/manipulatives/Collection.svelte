@@ -39,20 +39,42 @@
   let previous: readonly number[] | null = null;
 
   $effect(() => {
-    const counts = placement.bags;
+    const bagCounts = placement.bags;
     if (previous && !userMove && root) {
-      counts.forEach((count, i) => {
+      bagCounts.forEach((count, i) => {
         const before = previous?.[i] ?? 0;
         if (count <= before) return;
         const dots = root?.querySelectorAll(`[data-testid="${bagId(i)}"] [data-marble]`) ?? [];
         popIn(Array.from(dots).slice(before, count));
       });
     }
-    previous = [...counts];
+    previous = [...bagCounts];
   });
 
   const taking = $derived(ontake !== undefined);
   const trayHidden = $derived(locked && placement.tray === 0);
+
+  function trackGrab(node: HTMLElement) {
+    function grab(event: PointerEvent): void {
+      const rect = node.getBoundingClientRect();
+      node.style.setProperty('--gx', `${event.clientX - rect.left}px`);
+      node.style.setProperty('--gy', `${event.clientY - rect.top}px`);
+    }
+    function clear(): void {
+      node.style.removeProperty('--gx');
+      node.style.removeProperty('--gy');
+    }
+    node.addEventListener('pointerdown', grab);
+    node.addEventListener('pointerup', clear);
+    node.addEventListener('pointercancel', clear);
+    return {
+      destroy() {
+        node.removeEventListener('pointerdown', grab);
+        node.removeEventListener('pointerup', clear);
+        node.removeEventListener('pointercancel', clear);
+      },
+    };
+  }
 
   function bagAccepts(index: number): (itemId: string) => boolean {
     return (itemId) => marbleSource(itemId) !== bagId(index);
@@ -73,7 +95,7 @@
 {/snippet}
 
 <div class="collection" bind:this={root}>
-  <div class="bags">
+  <div class="bags" style:--n={placement.bags.length}>
     {#each placement.bags as count, i (i)}
       <div class="cell">
         {#if taking}
@@ -104,6 +126,7 @@
                 class="handle"
                 data-bag-handle
                 data-marble-item={bagMarbleId(i)}
+                use:trackGrab
                 use:draggable={{ controller, id: bagMarbleId(i), label: `Kelereng di kantong ${i + 1}` }}
               ></div>
             {/if}
@@ -139,17 +162,20 @@
 <style>
   .collection {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1em;
   }
   .bags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1em;
+    --cap: 220px;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(max(88px, calc((100% - (var(--n) - 1) * 0.5em) / var(--n) - 0.5px)), 1fr));
+    gap: 0.5em;
+    max-width: calc(var(--n) * var(--cap) + (var(--n) - 1) * 0.5em);
   }
   .cell {
-    flex: 1 1 0;
-    min-width: 96px;
-    max-width: 220px;
+    width: 100%;
+    max-width: var(--cap);
+    justify-self: center;
     display: grid;
     gap: 0.25em;
     justify-items: center;
@@ -243,11 +269,11 @@
   .handle:global([data-dragging])::after {
     content: '';
     position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 30px;
-    height: 30px;
-    margin: -15px 0 0 -15px;
+    top: var(--gy, 50%);
+    left: var(--gx, 50%);
+    width: 36px;
+    height: 36px;
+    transform: translate(-50%, -50%);
     box-sizing: border-box;
     border: 3px solid var(--ink);
     border-radius: 50%;
@@ -285,6 +311,12 @@
   .tray-marble:global([data-dragging]) {
     cursor: grabbing;
   }
+  @media (max-width: 599px) {
+    .tray {
+      gap: 0;
+      padding: 0.25em;
+    }
+  }
   @media (min-width: 600px) {
     .dot {
       width: 22px;
@@ -300,8 +332,8 @@
     }
   }
   @media (min-width: 1600px) {
-    .cell {
-      max-width: 300px;
+    .bags {
+      --cap: 300px;
     }
     .dot {
       width: 30px;
