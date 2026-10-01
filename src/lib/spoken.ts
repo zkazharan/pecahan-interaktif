@@ -17,3 +17,9 @@ export function spokenFraction(f: Fraction): string {
   if (f.n === 1) return `seper${denominator}`;
   return `${terbilang(f.n)} per${denominator}`;
 }
+
+export function spokenMixed(whole: number, rest: Fraction): string {
+  if (rest.n === 0) return terbilang(whole);
+  if (whole === 0) return spokenFraction(rest);
+  return `${terbilang(whole)} ${spokenFraction(rest)}`;
+}

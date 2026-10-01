@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { frac } from './fraction';
-import { spokenFraction, terbilang } from './spoken';
+import { spokenFraction, spokenMixed, terbilang } from './spoken';
 
 describe('terbilang', () => {
   it('names numbers in Indonesian', () => {
@@ -30,5 +30,17 @@ describe('spokenFraction', () => {
     expect(spokenFraction(frac(2, 5))).toBe('dua perlima');
     expect(spokenFraction(frac(1, 12))).toBe('seperdua belas');
     expect(spokenFraction(frac(5, 24))).toBe('lima perdua puluh empat');
+  });
+});
+
+describe('spokenMixed', () => {
+  it('reads whole and rest together', () => {
+    expect(spokenMixed(1, frac(1, 4))).toBe('satu seperempat');
+    expect(spokenMixed(2, frac(3, 5))).toBe('dua tiga perlima');
+  });
+
+  it('drops an empty part', () => {
+    expect(spokenMixed(3, frac(0, 4))).toBe('tiga');
+    expect(spokenMixed(0, frac(1, 2))).toBe('setengah');
   });
 });
