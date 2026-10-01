@@ -24,6 +24,11 @@ describe('nextReadyModule', () => {
 });
 
 describe('registered modules', () => {
+  it('has jumlah-penyebut-beda ready', () => {
+    expect(findModule('jumlah-penyebut-beda')?.slug).toBe('jumlah-penyebut-beda');
+    expect(nextReadyModule('jumlah-penyebut-sama')?.slug).toBe('jumlah-penyebut-beda');
+  });
+
   it('has jumlah-penyebut-sama ready', () => {
     expect(findModule('jumlah-penyebut-sama')?.slug).toBe('jumlah-penyebut-sama');
     expect(nextReadyModule('pecahan-campuran')?.slug).toBe('jumlah-penyebut-sama');

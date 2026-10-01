@@ -5,6 +5,7 @@ import { membandingkan } from './modules/membandingkan';
 import { senilai } from './modules/senilai';
 import { pecahanCampuran } from './modules/pecahan-campuran';
 import { jumlahPenyebutSama } from './modules/jumlah-penyebut-sama';
+import { jumlahPenyebutBeda } from './modules/jumlah-penyebut-beda';
 import type { ModuleDef } from './types';
 
 export const MODULES: Readonly<Record<string, ModuleDef>> = {
@@ -14,6 +15,7 @@ export const MODULES: Readonly<Record<string, ModuleDef>> = {
   [senilai.slug]: senilai,
   [pecahanCampuran.slug]: pecahanCampuran,
   [jumlahPenyebutSama.slug]: jumlahPenyebutSama,
+  [jumlahPenyebutBeda.slug]: jumlahPenyebutBeda,
 };
 
 export function findModule(slug: string): ModuleDef | undefined {

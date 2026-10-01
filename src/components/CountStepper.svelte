@@ -34,6 +34,7 @@
     font-weight: 600;
   }
   .step {
+    flex: none;
     width: 48px;
     height: 48px;
     border: var(--line) solid var(--ink);
