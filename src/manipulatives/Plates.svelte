@@ -37,6 +37,10 @@
   const arcs = $derived(sliceAngles(equalSlices(capacity)));
   const pieceName = $derived(`Potongan ${spokenFraction(frac(1, capacity))}`);
 
+  function shown(count: number): number {
+    return Math.min(count, capacity);
+  }
+
   function plateAccepts(index: number): (itemId: string) => boolean {
     return (itemId) => sourceOf(itemId) !== plateId(index) && placement.plates[index] < capacity;
   }
@@ -58,16 +62,25 @@
           {/each}
         </svg>
         <svg class="layer" viewBox={`0 0 ${CIRCLE.view} ${CIRCLE.view}`}>
-          {#each Array.from({ length: count }, (_, k) => k) as k (k)}
-            <path
-              class="piece"
-              data-plate-piece
-              data-piece-item={plateItemId(i, k)}
-              d={wedgePath(arcs[k].start, arcs[k].end)}
-              style:fill={color}
-              use:draggable={{ controller, id: plateItemId(i, k), label: `${pieceName} di piring ${i + 1}`, disabled: locked }}
-            />
+          {#each Array.from({ length: shown(count) - 1 }, (_, k) => k) as k (k)}
+            <path class="piece fixed" data-plate-piece d={wedgePath(arcs[k].start, arcs[k].end)} style:fill={color} />
           {/each}
+          {#if shown(count) > 0}
+            <g
+              class="handle"
+              data-plate-handle
+              data-piece-item={plateItemId(i, shown(count) - 1)}
+              use:draggable={{ controller, id: plateItemId(i, shown(count) - 1), label: `${pieceName} di piring ${i + 1}`, disabled: locked }}
+            >
+              <circle class="hit" cx={CIRCLE.cx} cy={CIRCLE.cy} r={CIRCLE.r + 6} />
+              <path
+                class="piece"
+                data-plate-piece
+                d={wedgePath(arcs[shown(count) - 1].start, arcs[shown(count) - 1].end)}
+                style:fill={color}
+              />
+            </g>
+          {/if}
         </svg>
       </div>
     {/each}
@@ -131,8 +144,18 @@
     stroke-linejoin: round;
     cursor: grab;
   }
-  .piece:focus-visible {
+  .piece.fixed {
+    cursor: default;
+  }
+  .hit {
+    fill: transparent;
+    pointer-events: all;
+    cursor: grab;
+  }
+  .handle {
     outline: none;
+  }
+  .handle:focus-visible .piece {
     stroke: var(--blue);
     stroke-width: 6;
   }
@@ -157,7 +180,7 @@
     outline: 3px solid var(--blue);
   }
   .tray-piece:global([data-dragging]),
-  .piece:global([data-dragging]) {
+  .handle:global([data-dragging]) .hit {
     cursor: grabbing;
   }
   @media (min-width: 1600px) {
