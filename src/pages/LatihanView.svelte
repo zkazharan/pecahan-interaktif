@@ -36,15 +36,23 @@
   let flow = $state(startLatihan());
   let answer = $state<A>(untrack(() => latihan.emptyAnswer(latihan.generate(createRng(seed))[0])));
   let hint = $state('');
+  let checked = $state<string | null>(null);
+  let primary = $state<HTMLButtonElement | null>(null);
 
   const task = $derived(tasks[flow.index]);
   const firstTry = $derived(firstTryCount(flow.outcomes));
   const complete = $derived(latihan.isComplete(task, answer));
   const settled = $derived(flow.status === 'correct' || flow.status === 'shown');
+  const unchanged = $derived(flow.status === 'wrong' && JSON.stringify(answer) === checked);
+
+  $effect(() => {
+    if (settled) primary?.focus();
+  });
 
   function check(): void {
     const result = latihan.check(task, answer);
     flow = submitAnswer(flow, result.correct);
+    checked = JSON.stringify(answer);
     hint = result.correct ? '' : result.hint;
   }
 
@@ -57,6 +65,7 @@
   function advance(): void {
     flow = nextTask(flow);
     hint = '';
+    checked = null;
     if (flow.status === 'done') {
       store.record(slug, firstTryCount(flow.outcomes));
       return;
@@ -69,6 +78,7 @@
     flow = startLatihan();
     answer = latihan.emptyAnswer(tasks[0]);
     hint = '';
+    checked = null;
   }
 </script>
 
@@ -105,14 +115,14 @@
     </p>
     <div class="actions">
       {#if settled}
-        <button type="button" class="btn primary" onclick={advance}>
+        <button type="button" class="btn primary" bind:this={primary} onclick={advance}>
           {flow.index + 1 === TASKS_PER_LATIHAN ? 'Lihat hasil' : 'Soal berikutnya →'}
         </button>
       {:else}
         {#if canShowSolution(flow)}
           <button type="button" class="btn" onclick={reveal}>Tunjukkan caranya</button>
         {/if}
-        <button type="button" class="btn primary" disabled={!complete} onclick={check}>Cek jawaban</button>
+        <button type="button" class="btn primary" disabled={!complete || unchanged} onclick={check}>Cek jawaban</button>
       {/if}
     </div>
   {/if}

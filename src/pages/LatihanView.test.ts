@@ -46,13 +46,14 @@ describe('LatihanView', () => {
     expect(store.all().contoh.bestFirstTry).toBe(5);
   });
 
-  it('shows the hint after a wrong answer and offers the solution after the second', async () => {
+  it('shows the hint after a wrong answer and offers the solution after a second different one', async () => {
     const { store, user } = setup();
     await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
     await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
     expect(screen.getByText('Coba lagi ya.')).toBeInTheDocument();
     expect(screen.getByText(/Umpan balik wrong/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Tunjukkan caranya' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah lain' }));
     await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
     await user.click(screen.getByRole('button', { name: 'Tunjukkan caranya' }));
     expect(screen.getByText(/Jawaban 0 · Umpan balik shown/)).toBeInTheDocument();
@@ -61,6 +62,25 @@ describe('LatihanView', () => {
     for (let i = 1; i < 5; i++) await answerRight(user, i === 4);
     expect(screen.getByRole('img', { name: 'Stempel Bagus! Nilai 80' })).toBeInTheDocument();
     expect(store.all().contoh.bestFirstTry).toBe(4);
+  });
+
+  it('does not count an unchanged answer as another mistake', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    expect(screen.getByRole('button', { name: 'Cek jawaban' })).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    expect(screen.getByRole('button', { name: 'Cek jawaban' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Tunjukkan caranya' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah lain' }));
+    expect(screen.getByRole('button', { name: 'Cek jawaban' })).toBeEnabled();
+  });
+
+  it('moves focus to the next button once the answer is correct', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab benar' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    expect(screen.getByRole('button', { name: 'Soal berikutnya →' })).toHaveFocus();
   });
 
   it('starts over with Ulangi latihan', async () => {

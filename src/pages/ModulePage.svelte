@@ -29,7 +29,7 @@
     <a class="back" href="#/">← Daftar modul</a>
     <h1>{entry?.number} · {entry?.title}</h1>
     <nav class="tabs" aria-label="Bagian modul">
-      <a href={`#/${module.slug}/peraga`} aria-current={tab === 'peraga' ? 'page' : undefined}>Peraga</a>
+      <a href={router.peragaHref(module.slug)} aria-current={tab === 'peraga' ? 'page' : undefined}>Peraga</a>
       <a href={`#/${module.slug}/latihan`} aria-current={tab === 'latihan' ? 'page' : undefined}>Latihan</a>
     </nav>
     <div class="tools">
