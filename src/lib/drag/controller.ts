@@ -9,6 +9,7 @@ export type DragControllerOptions = {
   announce?: (message: string) => void;
   snapRadius?: number;
   rectOf?: (el: Element) => Rect;
+  reducedMotion?: () => boolean;
 };
 
 type PointerDrag = {
@@ -35,11 +36,13 @@ export class DragController {
   private readonly snapRadius: number;
   private readonly rectOf: (el: Element) => Rect;
   private readonly say: (message: string) => void;
+  private readonly reducedMotion: () => boolean;
 
   constructor(private readonly options: DragControllerOptions) {
     this.snapRadius = options.snapRadius ?? 48;
     this.rectOf = options.rectOf ?? ((el) => el.getBoundingClientRect());
     this.say = options.announce ?? (() => {});
+    this.reducedMotion = options.reducedMotion ?? prefersReducedMotion;
   }
 
   registerItem(item: DragItem): () => void {
@@ -96,6 +99,12 @@ export class DragController {
     this.finish(drag, null);
   }
 
+  cancelItem(itemId: string): void {
+    const drag = this.active;
+    if (!drag || drag.itemId !== itemId) return;
+    this.finish(drag, null);
+  }
+
   keyDown(itemId: string, key: string): boolean {
     const drag = this.active;
     if (!drag) return this.pickUp(itemId, key);
@@ -142,7 +151,7 @@ export class DragController {
     this.active = null;
     if (item) {
       item.el.removeAttribute('data-dragging');
-      setOffset(item.el, 0, 0, targetId === null && drag.kind === 'pointer');
+      setOffset(item.el, 0, 0, targetId === null && drag.kind === 'pointer' && !this.reducedMotion());
     }
     if (targetId === null) return;
     const target = this.targets.get(targetId);
@@ -178,6 +187,10 @@ export class DragController {
     drag.hoverId = id;
     if (id) this.targets.get(id)?.el.setAttribute('data-drop-hover', '');
   }
+}
+
+function prefersReducedMotion(): boolean {
+  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 function distanceToRect(x: number, y: number, rect: Rect): number {

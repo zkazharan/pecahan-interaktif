@@ -175,3 +175,118 @@ describe('keyboard drag', () => {
     expect(controller.keyDown('piece', ' ')).toBe(false);
   });
 });
+
+describe('svg scale', () => {
+  it('divides the pointer delta by the svg screen scale', () => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    svg.append(rect);
+    svg.getScreenCTM = () => ({ a: 2, d: 2 }) as DOMMatrix;
+    const controller = new DragController({ onDrop: () => {}, rectOf: () => ({ left: 0, top: 0, width: 0, height: 0 }) });
+    controller.registerItem({ id: 'r', el: rect, label: 'r' });
+    controller.start('r', { pointerId: P1, clientX: 0, clientY: 0 });
+    controller.move({ pointerId: P1, clientX: 40, clientY: 20 });
+    expect((rect as unknown as SVGElement).style.transform).toBe('translate(20px, 10px)');
+  });
+});
+
+describe('return home transition', () => {
+  function missed(reducedMotion: () => boolean) {
+    const item = document.createElement('div');
+    const controller = new DragController({ onDrop: () => {}, reducedMotion, rectOf: () => ({ left: 0, top: 0, width: 0, height: 0 }) });
+    controller.registerItem({ id: 'x', el: item, label: 'x' });
+    controller.start('x', { pointerId: P1, clientX: 0, clientY: 0 });
+    controller.move({ pointerId: P1, clientX: 300, clientY: 300 });
+    controller.end({ pointerId: P1, clientX: 300, clientY: 300 });
+    return item.style.transition;
+  }
+
+  it('animates the return when motion is allowed', () => {
+    expect(missed(() => false)).toContain('200ms');
+  });
+
+  it('skips the animation under reduced motion', () => {
+    expect(missed(() => true)).not.toContain('200ms');
+  });
+
+  it('defaults safely when matchMedia is missing', () => {
+    expect(() => {
+      const controller = new DragController({ onDrop: () => {} });
+      controller.registerItem({ id: 'x', el: document.createElement('div'), label: 'x' });
+      controller.start('x', { pointerId: P1, clientX: 0, clientY: 0 });
+      controller.cancelPointer({ pointerId: P1, clientX: 0, clientY: 0 });
+    }).not.toThrow();
+  });
+});
+
+describe('cancelItem', () => {
+  it('cancels a pointer drag without dropping', () => {
+    const { controller, drops, item } = setup();
+    controller.start('piece', { pointerId: P1, clientX: 10, clientY: 10 });
+    controller.move({ pointerId: P1, clientX: 250, clientY: 50 });
+    controller.cancelItem('piece');
+    expect(controller.isDragging()).toBe(false);
+    expect(drops).toEqual([]);
+    expect((item as HTMLElement).style.transform).toBe('');
+  });
+
+  it('cancels a keyboard drag and clears the hover', () => {
+    const { controller, drops, a, item } = setup();
+    controller.keyDown('piece', ' ');
+    expect(a.hasAttribute('data-drop-hover')).toBe(true);
+    controller.cancelItem('piece');
+    expect(controller.isDragging()).toBe(false);
+    expect(drops).toEqual([]);
+    expect(a.hasAttribute('data-drop-hover')).toBe(false);
+    expect(item.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('does nothing for a different item', () => {
+    const { controller } = setup();
+    controller.keyDown('piece', ' ');
+    controller.cancelItem('other');
+    expect(controller.isDragging()).toBe(true);
+  });
+
+  it('does nothing when idle', () => {
+    const { controller } = setup();
+    expect(() => controller.cancelItem('piece')).not.toThrow();
+    expect(controller.isDragging()).toBe(false);
+  });
+});
+
+describe('targeting', () => {
+  it('drops at exactly the snap radius and not beyond', () => {
+    const inside = setup();
+    inside.controller.start('piece', { pointerId: P1, clientX: 0, clientY: 0 });
+    inside.controller.end({ pointerId: P1, clientX: 152, clientY: 50 });
+    expect(inside.drops).toEqual([{ itemId: 'piece', targetId: 'a' }]);
+
+    const outside = setup();
+    outside.controller.start('piece', { pointerId: P1, clientX: 0, clientY: 0 });
+    outside.controller.end({ pointerId: P1, clientX: 151, clientY: 50 });
+    expect(outside.drops).toEqual([]);
+  });
+
+  it('snaps to the nearer of two targets', () => {
+    const { controller, drops } = setup();
+    controller.start('piece', { pointerId: P1, clientX: 0, clientY: 0 });
+    controller.end({ pointerId: P1, clientX: 330, clientY: 50 });
+    expect(drops).toEqual([{ itemId: 'piece', targetId: 'a' }]);
+
+    const other = setup();
+    other.controller.start('piece', { pointerId: P1, clientX: 0, clientY: 0 });
+    other.controller.end({ pointerId: P1, clientX: 370, clientY: 50 });
+    expect(other.drops).toEqual([{ itemId: 'piece', targetId: 'b' }]);
+  });
+
+  it('Escape clears the hover and dragging marks', () => {
+    const { controller, a, item } = setup();
+    controller.keyDown('piece', ' ');
+    expect(a.hasAttribute('data-drop-hover')).toBe(true);
+    expect(item.hasAttribute('data-dragging')).toBe(true);
+    controller.keyDown('piece', 'Escape');
+    expect(a.hasAttribute('data-drop-hover')).toBe(false);
+    expect(item.hasAttribute('data-dragging')).toBe(false);
+  });
+});

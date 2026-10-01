@@ -35,6 +35,7 @@ export const draggable: Action<HTMLElement | SVGElement, DraggableParams> = (nod
     try {
       node.setPointerCapture(event.pointerId);
     } catch {
+      params.controller.cancelItem(params.id);
       return;
     }
     event.preventDefault();
@@ -43,6 +44,9 @@ export const draggable: Action<HTMLElement | SVGElement, DraggableParams> = (nod
   const onPointerMove = (event: PointerEvent) => params.controller.move(event);
   const onPointerUp = (event: PointerEvent) => params.controller.end(event);
   const onPointerCancel = (event: PointerEvent) => params.controller.cancelPointer(event);
+
+  const onBlur = () => params.controller.cancelItem(params.id);
+  const onLostPointerCapture = () => params.controller.cancelItem(params.id);
 
   function onKeyDown(event: KeyboardEvent): void {
     if (params.disabled) return;
@@ -54,6 +58,8 @@ export const draggable: Action<HTMLElement | SVGElement, DraggableParams> = (nod
   node.addEventListener('pointerup', onPointerUp as EventListener);
   node.addEventListener('pointercancel', onPointerCancel as EventListener);
   node.addEventListener('keydown', onKeyDown as EventListener);
+  node.addEventListener('blur', onBlur);
+  node.addEventListener('lostpointercapture', onLostPointerCapture);
 
   return {
     update(next) {
@@ -62,12 +68,15 @@ export const draggable: Action<HTMLElement | SVGElement, DraggableParams> = (nod
       unregister = register(next);
     },
     destroy() {
+      params.controller.cancelItem(params.id);
       unregister();
       node.removeEventListener('pointerdown', onPointerDown as EventListener);
       node.removeEventListener('pointermove', onPointerMove as EventListener);
       node.removeEventListener('pointerup', onPointerUp as EventListener);
       node.removeEventListener('pointercancel', onPointerCancel as EventListener);
       node.removeEventListener('keydown', onKeyDown as EventListener);
+      node.removeEventListener('blur', onBlur);
+      node.removeEventListener('lostpointercapture', onLostPointerCapture);
     },
   };
 };
