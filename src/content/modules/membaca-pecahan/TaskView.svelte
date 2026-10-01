@@ -61,6 +61,7 @@
       {#if diff && picked}
         <div class="diff" data-testid="diff">
           <FractionCircles value={picked.value} label={`Kartu pilihanmu: ${spokenFraction(picked.value)}`} />
+          <p class="caption" aria-hidden="true">Kartu pilihanmu</p>
         </div>
       {/if}
       <CardSlots cards={task.cards} slots={PICK_SLOTS} placement={answer.placement} onplace={place} {locked} />
@@ -78,6 +79,9 @@
     margin-top: 0.8em;
     padding: 0.6em 0.8em;
     border-left: 4px dashed var(--red);
+  }
+  .caption {
+    margin: 0.4em 0 0;
   }
   .read {
     display: grid;

@@ -88,6 +88,14 @@ describe('membaca-pecahan TaskView', () => {
     };
     const { container } = render(TaskView, { props: { task, answer: { shaded: [], placement: { pilihan: 'c1' } }, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
     expect(container.querySelectorAll('[data-testid="diff"] [data-testid="fraction-circles"] svg')).toHaveLength(2);
+    const caption = container.querySelector('[data-testid="diff"] .caption')!;
+    expect(caption).toHaveTextContent('Kartu pilihanmu');
+    expect(caption).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('has no read caption without diff', () => {
+    const { container } = render(TaskView, { props: { task: read, answer: { shaded: [], placement: { pilihan: 'c0' } }, onanswer: vi.fn(), feedback: 'wrong' } });
+    expect(container.querySelector('.caption')).toBeNull();
   });
 
   it('draws no read difference when no card is chosen', () => {

@@ -60,6 +60,7 @@
     {#if diff && pickedShape}
       <div class="diff" data-testid="diff">
         <Circle slices={pickedShape.slices} shaded={pickedShape.shaded} guides={task.target} size="md" label={`Pilihanmu, dengan garis merah untuk ${task.target} sama besar`} />
+        <p class="caption" aria-hidden="true">Pilihanmu. Garis merah: kalau dipotong {task.target} sama besar.</p>
       </div>
     {/if}
   {/if}

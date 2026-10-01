@@ -67,6 +67,15 @@ describe('membagi-adil TaskView', () => {
     const wrong = task.cards.find((card) => card.id !== task.correctId)!;
     const { container } = render(TaskView, { props: { task, answer: { placement: { pilihan: wrong.id }, cuts: 1 }, onanswer: () => {}, feedback: 'wrong', diff: true } });
     expect(container.querySelectorAll('[data-testid="diff"] [data-guide]')).toHaveLength(task.target);
+    const caption = container.querySelector('[data-testid="diff"] .caption')!;
+    expect(caption).toHaveTextContent(`Pilihanmu. Garis merah: kalau dipotong ${task.target} sama besar.`);
+    expect(caption).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('has no pick caption without diff', () => {
+    const task = pick as Extract<MembagiAdilTask, { kind: 'pick' }>;
+    const { container } = render(TaskView, { props: { task, answer: { placement: { pilihan: task.correctId }, cuts: 1 }, onanswer: () => {}, feedback: 'none' } });
+    expect(container.querySelector('.caption')).toBeNull();
   });
 
   it('draws no pick difference when no card is chosen', () => {
