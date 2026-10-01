@@ -22,3 +22,13 @@ describe('nextReadyModule', () => {
     expect(nextReadyModule('pecahan-dari-jumlah')).toBeUndefined();
   });
 });
+
+describe('registered modules', () => {
+  it('has membandingkan ready', () => {
+    expect(findModule('membandingkan')?.slug).toBe('membandingkan');
+  });
+
+  it('points earlier modules to membandingkan as the next ready one', () => {
+    expect(nextReadyModule('membagi-adil')?.slug).toBe('membandingkan');
+  });
+});

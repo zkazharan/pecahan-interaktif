@@ -1,7 +1,10 @@
 import { CATALOG, type CatalogEntry } from './catalog';
+import { membandingkan } from './modules/membandingkan';
 import type { ModuleDef } from './types';
 
-export const MODULES: Readonly<Record<string, ModuleDef>> = {};
+export const MODULES: Readonly<Record<string, ModuleDef>> = {
+  [membandingkan.slug]: membandingkan,
+};
 
 export function findModule(slug: string): ModuleDef | undefined {
   return Object.hasOwn(MODULES, slug) ? MODULES[slug] : undefined;
