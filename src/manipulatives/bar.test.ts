@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { frac } from '../lib/fraction';
-import { BAR, hitBox, normalizeStacking, pieceWidth, piecePosition, rowY, stackNote, viewHeight, type BarRow } from './bar';
+import { BAR, hitBox, normalizeStacking, notePlacement, pieceWidth, piecePosition, rowY, stackNote, viewHeight, type BarRow } from './bar';
 
 const ROWS: BarRow[] = [
   { id: 'a', value: frac(1, 3), color: 'var(--frac-1)' },
@@ -66,5 +66,28 @@ describe('hitBox', () => {
 
   it('keeps pieces that are already large enough', () => {
     expect(hitBox(frac(1, 2), 360)).toMatchObject({ x: 0, width: 410 });
+  });
+});
+
+describe('notePlacement', () => {
+  const NOTE = 'lebih panjang!';
+
+  it('puts the note after a short piece', () => {
+    const position = piecePosition(ROWS, 'a', { pieceOf: 'a', onto: 'b' });
+    const placed = notePlacement(position, pieceWidth(frac(1, 3)), NOTE);
+    expect(placed.anchor).toBe('start');
+    expect(placed.x).toBe(position.x + pieceWidth(frac(1, 3)) + 18);
+  });
+
+  it('tucks the note inside a long piece so it stays clear of the label column', () => {
+    for (const value of [frac(11, 12), frac(1, 1), frac(2, 2)]) {
+      const rows: BarRow[] = [{ id: 'a', value, color: 'x' }, ROWS[1]];
+      const position = piecePosition(rows, 'a', { pieceOf: 'a', onto: 'b' });
+      const placed = notePlacement(position, pieceWidth(value), NOTE);
+      expect(placed.anchor).toBe('end');
+      expect(placed.x).toBeLessThanOrEqual(BAR.labelX);
+      expect(placed.y).toBeGreaterThan(position.y);
+      expect(placed.y).toBeLessThan(position.y + BAR.rowHeight + 20);
+    }
   });
 });

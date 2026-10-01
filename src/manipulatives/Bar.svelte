@@ -5,7 +5,7 @@
   import { DragController } from '../lib/drag/controller';
   import { prefersReducedMotion } from '../lib/motion';
   import { spokenFraction } from '../lib/spoken';
-  import { BAR, hitBox, normalizeStacking, pieceWidth, piecePosition, rowY, viewHeight, type BarRow, type Stacking } from './bar';
+  import { BAR, hitBox, normalizeStacking, notePlacement, pieceWidth, piecePosition, rowY, viewHeight, type BarRow, type Stacking } from './bar';
 
   type Props = {
     rows: BarRow[];
@@ -67,7 +67,11 @@
       : rows,
   );
   const stackedRow = $derived(stacking ? rows.find((row) => row.id === stacking.pieceOf) : undefined);
-  const notePosition = $derived(stacking && stackedRow ? piecePosition(rows, stackedRow.id, stacking) : null);
+  const placedNote = $derived(
+    stacking && stackedRow && note
+      ? notePlacement(piecePosition(rows, stackedRow.id, stacking), pieceWidth(stackedRow.value), note)
+      : null,
+  );
 </script>
 
 <div class="bar-wrap" bind:this={root} bind:clientWidth={svgWidth}>
@@ -125,8 +129,8 @@
     </g>
   {/each}
 
-  {#if note && stackedRow && notePosition}
-    <text class="note" x={notePosition.x + pieceWidth(stackedRow.value) + 18} y={notePosition.y + 4}>{note}</text>
+  {#if placedNote}
+    <text class="note" class:inside={placedNote.anchor === 'end'} x={placedNote.x} y={placedNote.y} text-anchor={placedNote.anchor}>{note}</text>
   {/if}
 </svg>
 </div>
@@ -198,5 +202,11 @@
   .note {
     font: 700 42px var(--font-hand);
     fill: var(--red);
+  }
+  .note.inside {
+    stroke: #fff;
+    stroke-width: 8px;
+    paint-order: stroke;
+    stroke-linejoin: round;
   }
 </style>

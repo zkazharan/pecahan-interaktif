@@ -9,6 +9,11 @@ const sources = [
   ...html.matchAll(/<link[^>]+rel="modulepreload"[^>]+href="([^"]+)"/g),
 ].map((match) => match[1].replace(/^\.?\//, ''));
 
+if (sources.length === 0) {
+  console.error('no script or modulepreload sources found in dist/index.html');
+  process.exit(1);
+}
+
 let total = 0;
 for (const source of new Set(sources)) {
   const bytes = gzipSync(readFileSync(join('dist', source))).length;

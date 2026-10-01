@@ -45,6 +45,17 @@ describe('Bar', () => {
     expect(screen.getByText('lebih panjang!')).toBeInTheDocument();
   });
 
+  it('keeps the note inside the viewBox when the stacked piece is a whole', () => {
+    const rows: BarRow[] = [
+      { id: 'a', value: frac(1, 1), color: 'var(--frac-1)' },
+      { id: 'b', value: frac(1, 2), color: 'var(--frac-2)' },
+    ];
+    render(Bar, { props: { rows, stacking: { pieceOf: 'a', onto: 'b' }, note: 'lebih panjang!' } });
+    const note = screen.getByText('lebih panjang!');
+    expect(note).toHaveAttribute('text-anchor', 'end');
+    expect(Number(note.getAttribute('x'))).toBeLessThanOrEqual(BAR.labelX);
+  });
+
   it('keeps pieces out of the tab order when not draggable', () => {
     render(Bar, { props: { rows: ROWS, stacking: null } });
     expect(screen.getByRole('button', { name: 'Potongan sepertiga' })).toHaveAttribute('tabindex', '-1');

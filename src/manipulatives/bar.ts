@@ -55,3 +55,15 @@ export function hitBox(value: Fraction, svgWidth: number): { x: number; y: numbe
   const height = Math.max(BAR.rowHeight, minUnits);
   return { x: (base - width) / 2, y: (BAR.rowHeight - height) / 2, width, height };
 }
+
+const NOTE_CHAR_WIDTH = 22;
+
+export function notePlacement(
+  position: { x: number; y: number },
+  pieceW: number,
+  note: string,
+): { x: number; y: number; anchor: 'start' | 'end' } {
+  const after = position.x + pieceW + 18;
+  if (after + note.length * NOTE_CHAR_WIDTH <= BAR.labelX - 30) return { x: after, y: position.y + 4, anchor: 'start' };
+  return { x: position.x + pieceW - 14, y: position.y + BAR.rowHeight / 2 + 14, anchor: 'end' };
+}
