@@ -106,7 +106,7 @@ export function checkTask(task: MembandingkanTask, answer: Placement): CheckResu
     correct: false,
     hint:
       task.kind === 'compare'
-        ? 'Coba tumpuk pitanya. Mana yang lebih panjang?'
+        ? 'Lihat pitanya. Mana yang lebih panjang?'
         : 'Bandingkan dua-dua dulu. Buka pitanya kalau bingung.',
   };
 }

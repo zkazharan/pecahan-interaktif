@@ -100,7 +100,7 @@ describe('checkTask', () => {
     };
     const result = checkTask(task, { besar: 'c1' });
     expect(result.correct).toBe(false);
-    expect(result.hint).toBe('Coba tumpuk pitanya. Mana yang lebih panjang?');
+    expect(result.hint).toBe('Lihat pitanya. Mana yang lebih panjang?');
     expect(checkTask(task, { besar: 'c0' })).toEqual({ correct: true, hint: '' });
   });
 

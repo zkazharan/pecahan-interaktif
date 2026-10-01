@@ -61,7 +61,7 @@ test('re-checking the same wrong answer does not count as another mistake', asyn
   const check = page.getByRole('button', { name: 'Cek jawaban' });
   await dragTo(page, card, page.getByTestId('slot-besar'));
   await check.click();
-  await expect(page.getByText('Coba tumpuk pitanya. Mana yang lebih panjang?')).toBeVisible();
+  await expect(page.getByText('Lihat pitanya. Mana yang lebih panjang?')).toBeVisible();
   await expect(check).toBeDisabled();
   await dragTo(page, card, page.getByTestId('pile'));
   await expect(check).toBeDisabled();
