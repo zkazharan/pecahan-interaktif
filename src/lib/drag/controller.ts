@@ -1,3 +1,5 @@
+import { prefersReducedMotion } from '../motion';
+
 export type Point = { pointerId: number; clientX: number; clientY: number };
 export type Rect = { left: number; top: number; width: number; height: number };
 export type DragItem = { id: string; el: Element; label: string };
@@ -187,10 +189,6 @@ export class DragController {
     drag.hoverId = id;
     if (id) this.targets.get(id)?.el.setAttribute('data-drop-hover', '');
   }
-}
-
-function prefersReducedMotion(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 function distanceToRect(x: number, y: number, rect: Rect): number {

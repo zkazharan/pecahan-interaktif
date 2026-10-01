@@ -1,11 +1,12 @@
 <script lang="ts">
   import { scale } from 'svelte/transition';
+  import { prefersReducedMotion } from '../lib/motion';
 
   let { text, score, caption }: { text: string; score: number; caption: string } = $props();
 </script>
 
 <div class="stamp-area" role="img" aria-label={`Stempel ${text} Nilai ${score}`}>
-  <div class="stamp" in:scale={{ start: 1.5, duration: 220 }}>
+  <div class="stamp" in:scale={{ start: 1.5, duration: prefersReducedMotion() ? 0 : 220 }}>
     <span class="small">DIPERIKSA</span>
     <span class="word">{text}</span>
     <span class="small">{caption}</span>
