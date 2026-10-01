@@ -17,6 +17,22 @@ describe('Bar', () => {
     expect(container.querySelectorAll('[data-row="b"] .divider')).toHaveLength(3);
   });
 
+  it('re-cuts a row and relabels it', () => {
+    const { container } = render(Bar, { props: { rows: [{ ...ROWS[0], cut: 2 }], stacking: null } });
+    expect(container.querySelectorAll('[data-row="a"] .divider')).toHaveLength(5);
+    expect(container.querySelector('[data-row="a"] .label')?.textContent?.replace(/\s/g, '')).toBe('26');
+    expect(screen.getByRole('button', { name: 'Potongan dua perenam' })).toBeInTheDocument();
+  });
+
+  it('draws a two-whole row twice as long as a one-whole row', () => {
+    const rows: BarRow[] = [ROWS[0], { id: 'r', value: frac(5, 4), color: 'var(--frac-3)', wholes: 2 }];
+    const { container } = render(Bar, { props: { rows, stacking: null } });
+    const widthOf = (id: string) => Number(container.querySelector(`[data-testid="bar-target-${id}"]`)?.getAttribute('width'));
+    expect(widthOf('r')).toBeCloseTo(BAR.width, 3);
+    expect(widthOf('a')).toBeCloseTo(BAR.width / 2, 3);
+    expect(container.querySelectorAll('[data-row="r"] .whole-line')).toHaveLength(1);
+  });
+
   it('stacks a piece onto the other bar with the keyboard', async () => {
     const onstack = vi.fn();
     render(Bar, { props: { rows: ROWS, stacking: null, draggable: true, onstack } });

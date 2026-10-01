@@ -1,6 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import { frac } from '../lib/fraction';
-import { BAR, hitBox, normalizeStacking, notePlacement, pieceWidth, piecePosition, rowY, stackNote, viewHeight, type BarRow } from './bar';
+import {
+  BAR,
+  barUnits,
+  dividerXs,
+  hitBox,
+  normalizeStacking,
+  notePlacement,
+  pieceDividerXs,
+  pieceWidth,
+  piecePosition,
+  rowY,
+  shownValue,
+  stackNote,
+  unitWidth,
+  viewHeight,
+  wholeXs,
+  type BarRow,
+} from './bar';
 
 const ROWS: BarRow[] = [
   { id: 'a', value: frac(1, 3), color: 'var(--frac-1)' },
@@ -89,5 +106,35 @@ describe('notePlacement', () => {
       expect(placed.y).toBeGreaterThan(position.y);
       expect(placed.y).toBeLessThan(position.y + BAR.rowHeight + 20);
     }
+  });
+});
+
+describe('re-cut and wholes', () => {
+  const third: BarRow = { id: 'a', value: frac(1, 3), color: 'x' };
+
+  it('shows the re-cut form', () => {
+    expect(shownValue({ ...third, cut: 2 })).toEqual({ n: 2, d: 6 });
+    expect(shownValue(third)).toEqual({ n: 1, d: 3 });
+  });
+
+  it('draws a divider between every small part', () => {
+    expect(dividerXs(third, 1)).toHaveLength(2);
+    expect(dividerXs({ ...third, cut: 2 }, 1)).toHaveLength(5);
+    expect(dividerXs({ ...third, cut: 2 }, 1)[0]).toBeCloseTo(BAR.width / 6, 3);
+  });
+
+  it('keeps one unit the same length when a row spans two wholes', () => {
+    const two: BarRow = { id: 'r', value: frac(5, 4), color: 'x', wholes: 2 };
+    expect(barUnits([third, two])).toBe(2);
+    expect(unitWidth(2)).toBe(BAR.width / 2);
+    expect(pieceWidth(frac(1, 2), 2)).toBe(BAR.width / 4);
+    expect(wholeXs(two, 2)).toEqual([BAR.width / 2]);
+    expect(dividerXs(two, 2)).toHaveLength(6);
+    expect(dividerXs(two, 2)).not.toContain(BAR.width / 2);
+  });
+
+  it('marks the small parts inside the coloured piece', () => {
+    expect(pieceDividerXs({ ...third, cut: 3 }, 1)).toHaveLength(2);
+    expect(pieceDividerXs(third, 1)).toEqual([]);
   });
 });

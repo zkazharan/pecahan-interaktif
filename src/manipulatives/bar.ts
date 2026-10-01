@@ -1,6 +1,6 @@
 import { compare, type Fraction } from '../lib/fraction';
 
-export type BarRow = { id: string; value: Fraction; color: string };
+export type BarRow = { id: string; value: Fraction; color: string; cut?: number; wholes?: number };
 export type Stacking = { pieceOf: string; onto: string } | null;
 
 export const BAR = {
@@ -13,6 +13,10 @@ export const BAR = {
   viewWidth: 1000,
 } as const;
 
+function round(value: number): number {
+  return Number(value.toFixed(3));
+}
+
 export function rowY(index: number): number {
   return BAR.top + index * (BAR.rowHeight + BAR.gap);
 }
@@ -21,8 +25,40 @@ export function viewHeight(rowCount: number): number {
   return rowY(rowCount - 1) + BAR.rowHeight + 20;
 }
 
-export function pieceWidth(value: Fraction): number {
-  return (BAR.width * value.n) / value.d;
+export function barUnits(rows: readonly BarRow[]): number {
+  return Math.max(1, ...rows.map((row) => row.wholes ?? 1));
+}
+
+export function unitWidth(units: number): number {
+  return BAR.width / units;
+}
+
+export function pieceWidth(value: Fraction, units = 1): number {
+  return (unitWidth(units) * value.n) / value.d;
+}
+
+export function shownValue(row: BarRow): Fraction {
+  const k = row.cut ?? 1;
+  return { n: row.value.n * k, d: row.value.d * k };
+}
+
+export function dividerXs(row: BarRow, units: number): number[] {
+  const parts = shownValue(row).d;
+  const step = unitWidth(units) / parts;
+  const total = parts * (row.wholes ?? 1);
+  return Array.from({ length: total - 1 }, (_, i) => i + 1)
+    .filter((j) => j % parts !== 0)
+    .map((j) => round(step * j));
+}
+
+export function wholeXs(row: BarRow, units: number): number[] {
+  return Array.from({ length: (row.wholes ?? 1) - 1 }, (_, i) => round(unitWidth(units) * (i + 1)));
+}
+
+export function pieceDividerXs(row: BarRow, units: number): number[] {
+  const shown = shownValue(row);
+  const step = unitWidth(units) / shown.d;
+  return Array.from({ length: Math.max(shown.n - 1, 0) }, (_, i) => round(step * (i + 1)));
 }
 
 export function piecePosition(rows: readonly BarRow[], rowId: string, stacking: Stacking): { x: number; y: number } {
@@ -48,9 +84,13 @@ export function stackNote(rows: readonly BarRow[], stacking: Stacking): string {
 
 const MIN_TOUCH = 48;
 
-export function hitBox(value: Fraction, svgWidth: number): { x: number; y: number; width: number; height: number } {
+export function hitBox(
+  value: Fraction,
+  svgWidth: number,
+  units = 1,
+): { x: number; y: number; width: number; height: number } {
   const minUnits = svgWidth > 0 ? MIN_TOUCH / (svgWidth / BAR.viewWidth) : 0;
-  const base = pieceWidth(value);
+  const base = pieceWidth(value, units);
   const width = Math.max(base, minUnits);
   const height = Math.max(BAR.rowHeight, minUnits);
   return { x: (base - width) / 2, y: (BAR.rowHeight - height) / 2, width, height };

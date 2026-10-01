@@ -5,7 +5,24 @@
   import { DragController } from '../lib/drag/controller';
   import { prefersReducedMotion } from '../lib/motion';
   import { spokenFraction } from '../lib/spoken';
-  import { BAR, hitBox, normalizeStacking, notePlacement, pieceWidth, piecePosition, rowY, viewHeight, type BarRow, type Stacking } from './bar';
+  import {
+    BAR,
+    barUnits,
+    dividerXs,
+    hitBox,
+    normalizeStacking,
+    notePlacement,
+    pieceDividerXs,
+    pieceWidth,
+    piecePosition,
+    rowY,
+    shownValue,
+    unitWidth,
+    viewHeight,
+    wholeXs,
+    type BarRow,
+    type Stacking,
+  } from './bar';
 
   type Props = {
     rows: BarRow[];
@@ -22,6 +39,8 @@
   const lastPositions = new Map<string, { x: number; y: number }>();
   let svgWidth = $state(0);
   let root: HTMLElement | undefined = $state();
+
+  const units = $derived(barUnits(rows));
 
   const controller = new DragController({
     announce,
@@ -69,7 +88,7 @@
   const stackedRow = $derived(stacking ? rows.find((row) => row.id === stacking.pieceOf) : undefined);
   const placedNote = $derived(
     stacking && stackedRow && note
-      ? notePlacement(piecePosition(rows, stackedRow.id, stacking), pieceWidth(stackedRow.value), note)
+      ? notePlacement(piecePosition(rows, stackedRow.id, stacking), pieceWidth(stackedRow.value, units), note)
       : null,
   );
 </script>
@@ -84,45 +103,47 @@
 >
   {#each rows as row, i (row.id)}
     {@const y = rowY(i)}
+    {@const shown = shownValue(row)}
     <g data-row={row.id}>
       <rect
         class="whole"
         x={BAR.x0}
         {y}
-        width={BAR.width}
+        width={unitWidth(units) * (row.wholes ?? 1)}
         height={BAR.rowHeight}
         data-testid={`bar-target-${row.id}`}
-        use:dropTarget={{ controller, id: row.id, label: `pita ${spokenFraction(row.value)}`, accepts: accepts(row.id) }}
+        use:dropTarget={{ controller, id: row.id, label: `pita ${spokenFraction(shown)}`, accepts: accepts(row.id) }}
       />
-      {#each Array.from({ length: row.value.d - 1 }, (_, k) => k + 1) as k (k)}
-        {@const x = BAR.x0 + (BAR.width * k) / row.value.d}
-        <line class="divider" x1={x} x2={x} y1={y} y2={y + BAR.rowHeight} />
+      {#each dividerXs(row, units) as x (x)}
+        <line class="divider" x1={BAR.x0 + x} x2={BAR.x0 + x} y1={y} y2={y + BAR.rowHeight} />
+      {/each}
+      {#each wholeXs(row, units) as x (x)}
+        <line class="whole-line" x1={BAR.x0 + x} x2={BAR.x0 + x} y1={y - 6} y2={y + BAR.rowHeight + 6} />
       {/each}
       {#if stacking?.pieceOf === row.id}
-        <rect class="ghost" data-ghost x={BAR.x0 + 6} y={y + 6} width={Math.max(pieceWidth(row.value) - 12, 0)} height={BAR.rowHeight - 12} />
+        <rect class="ghost" data-ghost x={BAR.x0 + 6} y={y + 6} width={Math.max(pieceWidth(row.value, units) - 12, 0)} height={BAR.rowHeight - 12} />
       {/if}
       <g class="label" aria-hidden="true">
-        <text x={BAR.labelX} y={y + BAR.rowHeight / 2 - 8}>{row.value.n}</text>
+        <text x={BAR.labelX} y={y + BAR.rowHeight / 2 - 8}>{shown.n}</text>
         <line x1={BAR.labelX - 24} x2={BAR.labelX + 24} y1={y + BAR.rowHeight / 2} y2={y + BAR.rowHeight / 2} />
-        <text x={BAR.labelX} y={y + BAR.rowHeight / 2 + 34}>{row.value.d}</text>
+        <text x={BAR.labelX} y={y + BAR.rowHeight / 2 + 34}>{shown.d}</text>
       </g>
     </g>
   {/each}
 
   {#each ordered as row (row.id)}
     {@const pos = piecePosition(rows, row.id, stacking)}
-    {@const hit = hitBox(row.value, svgWidth)}
+    {@const hit = hitBox(row.value, svgWidth, units)}
     <g class="piece-pos" data-piece-pos={row.id} style:transform={`translate(${pos.x}px, ${pos.y}px)`}>
       <g
         class="piece"
         data-piece={row.id}
         class:grab={canDrag}
-        use:draggable={{ controller, id: PIECE + row.id, label: `Potongan ${spokenFraction(row.value)}`, disabled: !canDrag }}
+        use:draggable={{ controller, id: PIECE + row.id, label: `Potongan ${spokenFraction(shownValue(row))}`, disabled: !canDrag }}
       >
         <rect class="hit" x={hit.x} y={hit.y} width={hit.width} height={hit.height} />
-        <rect width={pieceWidth(row.value)} height={BAR.rowHeight} style:fill={row.color} />
-        {#each Array.from({ length: row.value.n - 1 }, (_, k) => k + 1) as k (k)}
-          {@const x = (BAR.width * k) / row.value.d}
+        <rect width={pieceWidth(row.value, units)} height={BAR.rowHeight} style:fill={row.color} />
+        {#each pieceDividerXs(row, units) as x (x)}
           <line class="divider" x1={x} x2={x} y1={0} y2={BAR.rowHeight} />
         {/each}
       </g>
@@ -160,6 +181,11 @@
     stroke: var(--ink);
     stroke-width: 3;
     stroke-dasharray: 8 8;
+    animation: appear 200ms ease-out;
+  }
+  .whole-line {
+    stroke: var(--ink);
+    stroke-width: 7;
   }
   .ghost {
     fill: none;
@@ -208,5 +234,13 @@
     stroke-width: 8px;
     paint-order: stroke;
     stroke-linejoin: round;
+  }
+  @keyframes appear {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 </style>
