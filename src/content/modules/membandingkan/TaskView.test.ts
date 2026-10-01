@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { frac } from '../../../lib/fraction';
@@ -26,6 +27,29 @@ describe('membandingkan TaskView', () => {
     render(TaskView, { props: { task: COMPARE, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'wrong' } });
     expect(screen.getByRole('group', { name: 'Pita pecahan' })).toBeInTheDocument();
     expect(screen.getByText('lebih panjang!')).toBeInTheDocument();
+  });
+
+  it('keeps the bars open and stacks the larger piece when the solution is shown', () => {
+    const task: MembandingkanTask = {
+      kind: 'compare',
+      cards: [
+        { id: 'c0', value: frac(1, 4) },
+        { id: 'c1', value: frac(1, 3) },
+      ],
+    };
+    render(TaskView, { props: { task, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'shown' } });
+    expect(screen.getByRole('group', { name: 'Pita pecahan' })).toBeInTheDocument();
+    expect(screen.getByText('lebih panjang!')).toBeInTheDocument();
+  });
+
+  it('lets the learner un-stack while the answer is wrong', async () => {
+    render(TaskView, { props: { task: COMPARE, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'wrong' } });
+    expect(screen.getByText('lebih panjang!')).toBeInTheDocument();
+    const piece = screen.getByRole('button', { name: 'Potongan sepertiga' });
+    await fireEvent.keyDown(piece, { key: ' ' });
+    await fireEvent.keyDown(piece, { key: ' ' });
+    await tick();
+    expect(screen.queryByText('lebih panjang!')).toBeNull();
   });
 
   it('locks the cards once the task is settled', () => {

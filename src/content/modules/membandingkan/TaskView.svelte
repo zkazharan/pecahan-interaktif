@@ -2,6 +2,7 @@
   import Bar from '../../../manipulatives/Bar.svelte';
   import CardSlots from '../../../manipulatives/CardSlots.svelte';
   import { stackNote, type BarRow, type Stacking } from '../../../manipulatives/bar';
+  import { compare } from '../../../lib/fraction';
   import type { Placement } from '../../../manipulatives/cardSlots';
   import type { TaskViewProps } from '../../types';
   import { slotsFor, type MembandingkanTask } from './tasks';
@@ -11,17 +12,23 @@
   const COLORS = ['var(--frac-1)', 'var(--frac-2)', 'var(--frac-3)'];
 
   let aidOpen = $state(false);
-  let stacking = $state<Stacking>(null);
+  let stacking = $state<Stacking | undefined>(undefined);
 
   const rows: BarRow[] = $derived(
     task.cards.map((card, i) => ({ id: card.id, value: card.value, color: COLORS[i % COLORS.length] })),
   );
   const locked = $derived(feedback === 'correct' || feedback === 'shown');
-  const showAid = $derived(aidOpen || feedback === 'wrong');
-  const shownStacking: Stacking = $derived(
-    stacking ??
-      (feedback === 'wrong' && task.kind === 'compare' ? { pieceOf: task.cards[0].id, onto: task.cards[1].id } : null),
-  );
+  const showAid = $derived(aidOpen || feedback === 'wrong' || feedback === 'shown');
+  const solutionStacking: Stacking = $derived.by(() => {
+    if (task.kind !== 'compare') return null;
+    const [small, large] = [...task.cards].sort((x, y) => compare(x.value, y.value));
+    return { pieceOf: large.id, onto: small.id };
+  });
+  const shownStacking: Stacking = $derived.by(() => {
+    if (feedback === 'shown') return solutionStacking ?? stacking ?? null;
+    if (stacking !== undefined) return stacking;
+    return feedback === 'wrong' && task.kind === 'compare' ? { pieceOf: task.cards[0].id, onto: task.cards[1].id } : null;
+  });
 </script>
 
 <p class="question">

@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { tick } from 'svelte';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { frac } from '../lib/fraction';
 import CardSlots from './CardSlots.svelte';
-import { emptyPlacement, type Card, type Slot } from './cardSlots';
+import { emptyPlacement, type Card, type Placement, type Slot } from './cardSlots';
 
 const CARDS: Card[] = [
   { id: 'c0', value: frac(1, 2) },
@@ -41,5 +42,74 @@ describe('CardSlots', () => {
     await fireEvent.keyDown(card, { key: ' ' });
     await fireEvent.keyDown(card, { key: ' ' });
     expect(onplace).not.toHaveBeenCalled();
+  });
+
+  it('keeps keyboard focus on a card after it moves to another block', async () => {
+    let rerenderWith: (placement: Placement) => Promise<void> = async () => {};
+    const view = render(CardSlots, {
+      props: {
+        cards: CARDS,
+        slots: SLOTS,
+        placement: emptyPlacement(['s1', 's2', 's3']),
+        onplace: (placement: Placement) => rerenderWith(placement),
+      },
+    });
+    rerenderWith = (placement) => view.rerender({ placement });
+    const card = screen.getByRole('button', { name: 'Kartu seperlima' });
+    card.focus();
+    await fireEvent.keyDown(card, { key: ' ' });
+    await fireEvent.keyDown(card, { key: ' ' });
+    await tick();
+    await tick();
+    expect(screen.getByTestId('slot-s1').querySelector('[data-card="c2"]')).not.toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Kartu seperlima' }));
+  });
+
+  describe('solution reveal', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    function stubRects(): void {
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+        const inSlot = this.closest('.slot') !== null;
+        return { left: inSlot ? 0 : 300, top: 0, width: 80, height: 96, right: 0, bottom: 0, x: 0, y: 0, toJSON: () => ({}) };
+      });
+    }
+
+    it('slides the cards into their slots when a locked placement changes', async () => {
+      stubRects();
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      const view = render(CardSlots, {
+        props: { cards: CARDS, slots: SLOTS, placement: emptyPlacement(['s1', 's2', 's3']), onplace: vi.fn(), locked: false },
+      });
+      await view.rerender({ placement: { s1: 'c2', s2: null, s3: null }, locked: true });
+      const calls = animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('translate'));
+      expect(calls).toHaveLength(1);
+      const options = calls[0][1] as KeyframeAnimationOptions;
+      expect(options.duration).toBeLessThanOrEqual(250);
+    });
+
+    it('does not animate a placement change made by the learner', async () => {
+      stubRects();
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      const view = render(CardSlots, {
+        props: { cards: CARDS, slots: SLOTS, placement: emptyPlacement(['s1', 's2', 's3']), onplace: vi.fn() },
+      });
+      await view.rerender({ placement: { s1: 'c2', s2: null, s3: null } });
+      expect(animate).not.toHaveBeenCalled();
+    });
+
+    it('skips the slide under reduced motion', async () => {
+      stubRects();
+      vi.stubGlobal('matchMedia', () => ({ matches: true }));
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      const view = render(CardSlots, {
+        props: { cards: CARDS, slots: SLOTS, placement: emptyPlacement(['s1', 's2', 's3']), onplace: vi.fn(), locked: false },
+      });
+      await view.rerender({ placement: { s1: 'c2', s2: null, s3: null }, locked: true });
+      expect(animate).not.toHaveBeenCalled();
+    });
   });
 });

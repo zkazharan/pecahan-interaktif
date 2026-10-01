@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import FractionText from '../components/FractionText.svelte';
   import { draggable, dropTarget } from '../lib/drag/actions';
   import { announce } from '../lib/drag/announce';
   import { DragController } from '../lib/drag/controller';
   import { formatFraction } from '../lib/fraction';
+  import { prefersReducedMotion } from '../lib/motion';
   import { spokenFraction } from '../lib/spoken';
   import { PILE, pileCards, placeCard, type Card, type Placement, type Slot } from './cardSlots';
 
@@ -17,9 +19,49 @@
 
   let { cards, slots, placement, onplace, locked = false }: Props = $props();
 
+  let root: HTMLElement | undefined = $state();
+  const before = new Map<string, DOMRect>();
+
   const controller = new DragController({
     announce,
-    onDrop: ({ itemId, targetId }) => onplace(placeCard(placement, itemId, targetId)),
+    onDrop: ({ itemId, targetId }) => {
+      const hadFocus = document.activeElement?.closest('[data-card]')?.getAttribute('data-card') === itemId;
+      onplace(placeCard(placement, itemId, targetId));
+      if (hadFocus) {
+        tick().then(() => {
+          const el = root?.querySelector<HTMLElement>(`[data-card="${itemId}"]`);
+          if (el && document.activeElement !== el) el.focus();
+        });
+      }
+    },
+  });
+
+  $effect.pre(() => {
+    void placement;
+    before.clear();
+    if (!locked || !root) return;
+    for (const el of root.querySelectorAll('[data-card]')) {
+      before.set(el.getAttribute('data-card')!, el.getBoundingClientRect());
+    }
+  });
+
+  $effect(() => {
+    void placement;
+    if (!locked || !root || before.size === 0) return;
+    const skip = prefersReducedMotion();
+    for (const el of root.querySelectorAll('[data-card]')) {
+      const from = before.get(el.getAttribute('data-card')!);
+      if (!from || skip) continue;
+      const to = el.getBoundingClientRect();
+      const dx = from.left - to.left;
+      const dy = from.top - to.top;
+      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
+      el.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
+        { duration: 250, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      );
+    }
+    before.clear();
   });
 
   const byId = $derived(new Map(cards.map((card) => [card.id, card])));
@@ -37,7 +79,7 @@
   </div>
 {/snippet}
 
-<div class="card-slots">
+<div class="card-slots" bind:this={root}>
   <ol class="slots">
     {#each slots as slot (slot.id)}
       {@const cardId = placement[slot.id]}
