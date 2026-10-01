@@ -2,7 +2,7 @@ import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it, vi } from 'vitest';
 import { createRng } from '../../../lib/random';
 import TaskView from './TaskView.svelte';
-import { emptyAnswer, generateTasks, type CampuranTask } from './tasks';
+import { emptyAnswer, generateTasks, groupDiff, type CampuranTask } from './tasks';
 
 const group: CampuranTask = { kind: 'group', value: { n: 5, d: 4 } };
 const [, line, mixed] = generateTasks(createRng(4));
@@ -59,6 +59,43 @@ describe('pecahan-campuran TaskView', () => {
     it.each(['wrong', 'shown'] as const)('opens by itself on %s feedback', (feedback) => {
       const { container } = show(feedback);
       expect(container.querySelector('[data-plate-piece]')).not.toBeNull();
+    });
+  });
+
+  describe('diff', () => {
+    it('flags the plates that groupDiff flags on a wrong group answer', () => {
+      const answer = { plates: { plates: [3, 4], tray: 0 }, placement: {} };
+      const plain = render(TaskView, { props: { task: group, answer, onanswer: vi.fn(), feedback: 'wrong' } });
+      expect(plain.container.querySelectorAll('[data-flagged]')).toHaveLength(0);
+      expect(plain.container.querySelector('[data-diff]')).toBeNull();
+      plain.unmount();
+      const { container } = render(TaskView, { props: { task: group, answer, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+      expect(container.querySelector('[data-task-kind="group"]')).toHaveAttribute('data-diff', 'true');
+      const expected = groupDiff(group.kind === 'group' ? group.value : { n: 0, d: 1 }, answer.plates);
+      expect(container.querySelectorAll('[data-flagged]')).toHaveLength(expected.filter(Boolean).length);
+      expect(container.querySelectorAll('[data-flagged]')).toHaveLength(1);
+    });
+
+    it('prints the placed value on the number line', () => {
+      if (line.kind !== 'line') throw new Error('expected a line task');
+      const answer = { ...emptyAnswer(line), placement: { ...emptyAnswer(line).placement, t0: line.card.id } };
+      const plain = render(TaskView, { props: { task: line, answer, onanswer: vi.fn(), feedback: 'wrong' } });
+      expect(plain.container.querySelector('[data-placed-value]')).toBeNull();
+      plain.unmount();
+      const { container } = render(TaskView, { props: { task: line, answer, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+      expect(container.querySelector('[data-placed-value]')).not.toBeNull();
+    });
+
+    it('compares the chosen card with the goal on mixed tasks', () => {
+      if (mixed.kind !== 'mixed') throw new Error('expected a mixed task');
+      const wrongId = mixed.cards.find((card) => card.id !== mixed.correctId)!.id;
+      const answer = { ...emptyAnswer(mixed), placement: { pilihan: wrongId } };
+      const plain = render(TaskView, { props: { task: mixed, answer, onanswer: vi.fn(), feedback: 'wrong' } });
+      expect(plain.container.querySelector('[data-testid="diff"]')).toBeNull();
+      plain.unmount();
+      const { container } = render(TaskView, { props: { task: mixed, answer, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+      expect(container.querySelector('[data-testid="diff"] [data-testid="diff-bars"]')).not.toBeNull();
+      expect(container.querySelector('[data-row="goal"] .label')).not.toBeNull();
     });
   });
 });

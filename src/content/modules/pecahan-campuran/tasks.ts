@@ -57,6 +57,16 @@ export function generateTasks(rng: Rng): CampuranTask[] {
   ];
 }
 
+export function groupDiff(value: Fraction, state: PlatesState): boolean[] {
+  if (state.tray > 0) return state.plates.map(() => false);
+  return state.plates.map((count, i) => {
+    if (count === 0 || count === value.d) return false;
+    const earlierFull = state.plates.slice(0, i).every((c) => c === value.d);
+    const laterEmpty = state.plates.slice(i + 1).every((c) => c === 0);
+    return !(earlierFull && laterEmpty);
+  });
+}
+
 export function emptyAnswer(task: CampuranTask): CampuranAnswer {
   if (task.kind === 'group') return { plates: startPlates(task.value.n, plateCountFor(task.value)), placement: {} };
   if (task.kind === 'line') return { plates: NO_PLATES, placement: emptyPlacement(tickIds(task.max, task.perUnit)) };

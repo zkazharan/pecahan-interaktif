@@ -23,4 +23,18 @@ describe('jumlah-penyebut-sama TaskView', () => {
     expect(container.querySelector('[data-task-kind="sub"]')).not.toBeNull();
     expect(screen.getByTestId('plate-0').querySelectorAll('[data-plate-piece]')).toHaveLength(sub.a);
   });
+
+  it.each([add, sub])('compares the chosen card with a hidden-label goal on $kind with diff', (task) => {
+    const wrongId = task.cards.find((card) => card.id !== task.correctId)!.id;
+    const answer = { ...emptyAnswer(task), placement: { pilihan: wrongId } };
+    const plain = render(TaskView, { props: { task, answer, onanswer: vi.fn(), feedback: 'wrong' } });
+    expect(plain.container.querySelector('[data-testid="diff"]')).toBeNull();
+    plain.unmount();
+    const { container } = render(TaskView, { props: { task, answer, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelector(`[data-task-kind="${task.kind}"]`)).toHaveAttribute('data-diff', 'true');
+    expect(container.querySelector('[data-testid="diff"] [data-testid="diff-bars"]')).not.toBeNull();
+    expect(container.querySelector('[data-row="goal"]')).not.toBeNull();
+    expect(container.querySelector('[data-row="goal"] .label')).toBeNull();
+    expect(container.querySelector('[data-row="mine"] .label')).not.toBeNull();
+  });
 });

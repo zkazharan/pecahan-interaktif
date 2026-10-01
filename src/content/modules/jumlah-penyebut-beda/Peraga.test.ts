@@ -55,6 +55,14 @@ describe('jumlah-penyebut-beda Peraga', () => {
     expect(screen.queryByText(REJECTED)).toBeNull();
   });
 
+  it('hides the rejected note when the fractions change from outside', async () => {
+    const { view, user } = setup(frac(1, 5), frac(1, 5));
+    await user.click(screen.getByRole('button', { name: 'Tambah penyebut Pecahan kedua' }));
+    expect(screen.getByText(REJECTED)).toBeInTheDocument();
+    await view.rerender({ params: { a: frac(1, 4), b: frac(1, 6) } });
+    expect(screen.queryByText(REJECTED)).toBeNull();
+  });
+
   it('hides the rejected note when the step changes', async () => {
     const { user } = setup(frac(1, 5), frac(1, 5));
     await user.click(screen.getByRole('button', { name: 'Tambah penyebut Pecahan kedua' }));

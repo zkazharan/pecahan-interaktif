@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { equivalent, toMixed } from '../../../lib/fraction';
+import { equivalent, frac, toMixed } from '../../../lib/fraction';
 import { createRng } from '../../../lib/random';
 import { emptyPlacement } from '../../../manipulatives/cardSlots';
 import { tickIds } from '../../../manipulatives/numberLine';
@@ -7,6 +7,7 @@ import {
   checkTask,
   emptyAnswer,
   generateTasks,
+  groupDiff,
   isComplete,
   solution,
   type CampuranAnswer,
@@ -124,5 +125,17 @@ describe('emptyAnswer and isComplete', () => {
     expect(isComplete(line, solution(line))).toBe(true);
     expect(isComplete(mixed, solution(mixed))).toBe(true);
     expect(toMixed(mixed.kind === 'mixed' ? mixed.value : { n: 5, d: 4 }).whole).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('groupDiff', () => {
+  it('flags partly filled plates except a last remainder plate after full ones', () => {
+    expect(groupDiff(frac(7, 4), { plates: [3, 4], tray: 0 })).toEqual([true, false]);
+    expect(groupDiff(frac(7, 4), { plates: [4, 3], tray: 0 })).toEqual([false, false]);
+    expect(groupDiff(frac(9, 4), { plates: [4, 2, 3], tray: 0 })).toEqual([false, true, true]);
+  });
+
+  it('flags nothing while pieces are still in the tray', () => {
+    expect(groupDiff(frac(7, 4), { plates: [2, 2], tray: 3 })).toEqual([false, false]);
   });
 });

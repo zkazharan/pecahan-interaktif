@@ -43,6 +43,7 @@
     untrack(() => {
       cutA = 1;
       cutB = 1;
+      rejected = false;
     });
   });
 

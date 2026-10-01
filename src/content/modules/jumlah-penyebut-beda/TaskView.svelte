@@ -4,15 +4,18 @@
   import HandNote from '../../../components/HandNote.svelte';
   import Bar from '../../../manipulatives/Bar.svelte';
   import CardSlots from '../../../manipulatives/CardSlots.svelte';
+  import DiffBars from '../../../manipulatives/DiffBars.svelte';
   import { maxCut, type BarRow } from '../../../manipulatives/bar';
   import type { TaskViewProps } from '../../types';
   import { PICK_SLOTS } from '../common';
   import { targetCuts, type BedaAnswer, type BedaTask } from './tasks';
 
-  let { task, answer, onanswer, feedback }: TaskViewProps<BedaTask, BedaAnswer> = $props();
+  let { task, answer, onanswer, feedback, diff = false }: TaskViewProps<BedaTask, BedaAnswer> = $props();
 
   const locked = $derived(feedback === 'correct' || feedback === 'shown');
   const equalParts = $derived(task.a.d * answer.cuts[0] === task.b.d * answer.cuts[1]);
+  const goal = $derived(task.cards.find((card) => card.id === task.correctId)?.value);
+  const pickedValue = $derived(task.cards.find((card) => card.id === answer.placement.pilihan)?.value);
   const rows: BarRow[] = $derived([
     { id: 'a', value: task.a, color: 'var(--frac-1)', cut: answer.cuts[0] },
     { id: 'b', value: task.b, color: 'var(--frac-2)', cut: answer.cuts[1] },
@@ -24,7 +27,7 @@
   }
 </script>
 
-<div class="task" data-task-kind={task.kind} data-cuts={targetCuts(task).join(',')} data-correct={task.correctId}>
+<div class="task" data-task-kind={task.kind} data-cuts={targetCuts(task).join(',')} data-correct={task.correctId} data-diff={diff ? 'true' : undefined}>
   <p class="question">
     <FractionText value={task.a} />
     {task.kind === 'add-recut' ? '+' : '−'}
@@ -41,6 +44,11 @@
     {/if}
   </div>
   <CardSlots cards={task.cards} slots={PICK_SLOTS} placement={answer.placement} onplace={(placement) => onanswer({ ...answer, placement })} {locked} />
+  {#if diff && goal && pickedValue}
+    <div class="diff" data-testid="diff">
+      <DiffBars {goal} mine={pickedValue} hideGoal />
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -52,6 +60,11 @@
     margin: 0;
     font-size: 1.5em;
     font-weight: 700;
+  }
+  .diff {
+    margin-top: 0.8em;
+    padding: 0.6em 0.8em;
+    border-left: 4px dashed var(--red);
   }
   .cuts {
     display: flex;
