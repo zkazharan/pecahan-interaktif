@@ -6,6 +6,7 @@
   import { frac } from '../lib/fraction';
   import { spokenFraction } from '../lib/spoken';
   import { CIRCLE, equalSlices, sliceAngles, wedgePath } from './circle';
+  import { popIn } from './flip';
   import { TRAY, movePiece, plateId, plateItemId, sourceOf, trayItemId, type PlatesState } from './plates';
 
   type Props = {
@@ -19,12 +20,15 @@
   let { capacity, state: placement, onmove, locked = false, color = 'var(--frac-1)' }: Props = $props();
 
   let root: HTMLElement | undefined = $state();
+  let userMove = false;
 
   const controller = new DragController({
     announce,
     onDrop: ({ itemId, targetId }) => {
       const hadFocus = document.activeElement?.closest('[data-piece-item]')?.getAttribute('data-piece-item') === itemId;
+      userMove = true;
       onmove(movePiece(placement, sourceOf(itemId), targetId, capacity));
+      tick().then(() => (userMove = false));
       if (hadFocus) {
         tick().then(() => {
           const items = root?.querySelectorAll<HTMLElement | SVGElement>(`[data-container="${targetId}"] [data-piece-item]`);
@@ -32,6 +36,21 @@
         });
       }
     },
+  });
+
+  let previous: readonly number[] | null = null;
+
+  $effect(() => {
+    const counts = placement.plates;
+    if (previous && !userMove && root) {
+      counts.forEach((count, i) => {
+        const before = previous?.[i] ?? 0;
+        if (count <= before) return;
+        const wedges = root?.querySelectorAll(`[data-testid="plate-${i}"] [data-plate-piece]`) ?? [];
+        popIn(Array.from(wedges).slice(before, Math.min(count, capacity)));
+      });
+    }
+    previous = [...counts];
   });
 
   const arcs = $derived(sliceAngles(equalSlices(capacity)));
@@ -141,6 +160,8 @@
     stroke-dasharray: 6 6;
   }
   .piece {
+    transform-box: fill-box;
+    transform-origin: center;
     stroke: var(--ink);
     stroke-width: 3;
     stroke-linejoin: round;

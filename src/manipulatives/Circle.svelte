@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { prefersReducedMotion } from '../lib/motion';
   import { CIRCLE, sliceAngles, wedgePath } from './circle';
 
   type Props = {
@@ -13,6 +14,17 @@
 
   let { slices, shaded = [], onshade, label, size = 'md', color = 'var(--frac-1)', decorative = false }: Props = $props();
 
+  let svg: SVGSVGElement | undefined = $state();
+  let lastCount = 0;
+
+  $effect(() => {
+    const count = slices.length;
+    if (lastCount !== 0 && count !== lastCount && svg && !prefersReducedMotion()) {
+      svg.animate([{ transform: 'scale(0.94)' }, { transform: 'scale(1)' }], { duration: 180, easing: 'ease-out' });
+    }
+    lastCount = count;
+  });
+
   const arcs = $derived(sliceAngles(slices));
 
   function onKey(event: KeyboardEvent, index: number): void {
@@ -23,6 +35,7 @@
 </script>
 
 <svg
+  bind:this={svg}
   class="circle {size}"
   viewBox={`0 0 ${CIRCLE.view} ${CIRCLE.view}`}
   role={decorative ? undefined : 'group'}
@@ -72,6 +85,7 @@
     stroke-dasharray: 4 6;
   }
   .slice {
+    transition: fill 200ms ease-out;
     fill: #fff;
     stroke: var(--ink);
     stroke-width: 3;

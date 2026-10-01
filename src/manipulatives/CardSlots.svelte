@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { dropTarget } from '../lib/drag/actions';
-  import { prefersReducedMotion } from '../lib/motion';
   import DragCard from './DragCard.svelte';
   import { createCardDrop } from './cardDrop';
   import { PILE, pileCards, type Card, type Placement, type Slot } from './cardSlots';
+  import { measure, playFlip } from './flip';
 
   type Props = {
     cards: Card[];
@@ -16,36 +17,28 @@
   let { cards, slots, placement, onplace, locked = false }: Props = $props();
 
   let root: HTMLElement | undefined = $state();
-  const before = new Map<string, DOMRect>();
+  let userDrop = false;
+  let before = new Map<string, DOMRect>();
 
-  const controller = createCardDrop({ getPlacement: () => placement, onplace: (next) => onplace(next), getRoot: () => root });
+  const controller = createCardDrop({
+    getPlacement: () => placement,
+    onplace: (next) => onplace(next),
+    getRoot: () => root,
+    onUserDrop: () => {
+      userDrop = true;
+      tick().then(() => (userDrop = false));
+    },
+  });
 
   $effect.pre(() => {
     void placement;
-    before.clear();
-    if (!locked || !root) return;
-    for (const el of root.querySelectorAll('[data-card]')) {
-      before.set(el.getAttribute('data-card')!, el.getBoundingClientRect());
-    }
+    before = userDrop ? new Map() : measure(root, 'data-card');
   });
 
   $effect(() => {
     void placement;
-    if (!locked || !root || before.size === 0) return;
-    const skip = prefersReducedMotion();
-    for (const el of root.querySelectorAll('[data-card]')) {
-      const from = before.get(el.getAttribute('data-card')!);
-      if (!from || skip) continue;
-      const to = el.getBoundingClientRect();
-      const dx = from.left - to.left;
-      const dy = from.top - to.top;
-      if (Math.abs(dx) < 1 && Math.abs(dy) < 1) continue;
-      el.animate(
-        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'translate(0, 0)' }],
-        { duration: 250, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
-      );
-    }
-    before.clear();
+    playFlip(root, 'data-card', before);
+    before = new Map();
   });
 
   const byId = $derived(new Map(cards.map((card) => [card.id, card])));

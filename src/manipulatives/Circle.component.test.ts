@@ -38,4 +38,23 @@ describe('Circle', () => {
     expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
     expect(screen.queryByRole('group')).toBeNull();
   });
+
+  it('pulses when the number of slices changes, but not on first render', async () => {
+    const animate = vi.spyOn(Element.prototype, 'animate');
+    const view = render(Circle, { props: { slices: equalSlices(1), label: 'Martabak' } });
+    expect(animate).not.toHaveBeenCalled();
+    await view.rerender({ slices: equalSlices(3) });
+    expect(JSON.stringify(animate.mock.calls[0][0])).toContain('scale(0.94)');
+    vi.restoreAllMocks();
+  });
+
+  it('does not pulse under reduced motion', async () => {
+    vi.stubGlobal('matchMedia', () => ({ matches: true }));
+    const animate = vi.spyOn(Element.prototype, 'animate');
+    const view = render(Circle, { props: { slices: equalSlices(1), label: 'Martabak' } });
+    await view.rerender({ slices: equalSlices(3) });
+    expect(animate).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
 });

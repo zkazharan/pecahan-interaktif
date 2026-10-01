@@ -76,4 +76,26 @@ describe('Plates', () => {
     render(Plates, { props: { capacity: 2, state: { plates: [1], tray: 1 }, onmove: vi.fn(), locked: true } });
     for (const piece of screen.getAllByRole('button')) expect(piece).toHaveAttribute('aria-disabled', 'true');
   });
+
+  it('pops in pieces the program puts on a plate', async () => {
+    const animate = vi.spyOn(Element.prototype, 'animate');
+    const view = render(Plates, { props: { capacity: 4, state: { plates: [0, 0], tray: 5 }, onmove: vi.fn() } });
+    await view.rerender({ state: { plates: [4, 1], tray: 0 } });
+    expect(animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('scale(0.6)'))).toHaveLength(5);
+    vi.restoreAllMocks();
+  });
+
+  it('does not pop a piece the learner dragged', async () => {
+    const animate = vi.spyOn(Element.prototype, 'animate');
+    let rerenderWith: (state: { plates: number[]; tray: number }) => Promise<void> = async () => {};
+    const view = render(Plates, {
+      props: { capacity: 4, state: { plates: [0], tray: 2 }, onmove: (s: { plates: readonly number[]; tray: number }) => rerenderWith({ plates: [...s.plates], tray: s.tray }) },
+    });
+    rerenderWith = (state) => view.rerender({ state });
+    const [piece] = screen.getAllByRole('button', { name: 'Potongan seperempat' });
+    await fireEvent.keyDown(piece, { key: ' ' });
+    await fireEvent.keyDown(piece, { key: ' ' });
+    expect(animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('scale(0.6)'))).toHaveLength(0);
+    vi.restoreAllMocks();
+  });
 });

@@ -106,4 +106,18 @@ describe('NumberLine', () => {
     expect(target('t4').style.width).toBe('11.25%');
     expect(target('t2').style.width).toBe('22.5%');
   });
+
+  it('slides a card placed by the program but not one the learner dropped', async () => {
+    const animate = vi.spyOn(Element.prototype, 'animate');
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      const onLine = this.closest('.pin') !== null;
+      return { left: onLine ? 200 : 0, top: onLine ? 0 : 300, width: 64, height: 80, right: 0, bottom: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+    });
+    const empty = emptyPlacement(tickIds(1, 4));
+    const view = render(NumberLine, { props: { max: 1, perUnit: 4, cards: CARDS, placement: empty, onplace: vi.fn() } });
+    await view.rerender({ placement: { ...empty, t1: 'c0' } });
+    const slides = () => animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('translate')).length;
+    expect(slides()).toBe(1);
+    vi.restoreAllMocks();
+  });
 });

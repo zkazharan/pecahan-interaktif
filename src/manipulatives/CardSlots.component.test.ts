@@ -106,14 +106,29 @@ describe('CardSlots', () => {
       expect(options.duration).toBeLessThanOrEqual(250);
     });
 
-    it('does not animate a placement change made by the learner', async () => {
+    it('does not animate a card the learner dropped', async () => {
+      stubRects();
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      let rerenderWith: (placement: Placement) => Promise<void> = async () => {};
+      const view = render(CardSlots, {
+        props: { cards: CARDS, slots: SLOTS, placement: emptyPlacement(['s1', 's2', 's3']), onplace: (p: Placement) => rerenderWith(p) },
+      });
+      rerenderWith = (placement) => view.rerender({ placement });
+      const card = screen.getByRole('button', { name: 'Kartu seperlima' });
+      await fireEvent.keyDown(card, { key: ' ' });
+      await fireEvent.keyDown(card, { key: ' ' });
+      await tick();
+      expect(animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('translate'))).toHaveLength(0);
+    });
+
+    it('animates a placement set by the program even when unlocked', async () => {
       stubRects();
       const animate = vi.spyOn(Element.prototype, 'animate');
       const view = render(CardSlots, {
         props: { cards: CARDS, slots: SLOTS, placement: emptyPlacement(['s1', 's2', 's3']), onplace: vi.fn() },
       });
       await view.rerender({ placement: { s1: 'c2', s2: null, s3: null } });
-      expect(animate).not.toHaveBeenCalled();
+      expect(animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('translate'))).toHaveLength(1);
     });
 
     it('skips the slide under reduced motion', async () => {
