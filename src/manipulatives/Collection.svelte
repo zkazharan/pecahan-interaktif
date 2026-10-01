@@ -225,6 +225,9 @@
     stroke-linecap: round;
     vector-effect: non-scaling-stroke;
   }
+  .bag.taken .cloth {
+    fill: rgba(29, 78, 216, 0.15);
+  }
   .bag.taken .cloth,
   .bag.taken .tie {
     stroke: var(--blue);

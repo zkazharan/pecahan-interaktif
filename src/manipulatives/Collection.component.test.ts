@@ -16,6 +16,14 @@ describe('Collection', () => {
     expect(screen.getByTestId('marble-tray').querySelectorAll('[data-tray-marble]')).toHaveLength(3);
   });
 
+  it('marks taken bags with the taken class in both modes', () => {
+    const view = render(Collection, { props: { state: { bags: [1, 1, 1], tray: 0 }, onmove: () => {}, locked: true, taken: [true, false, true] } });
+    expect(view.container.querySelectorAll('.bag.taken')).toHaveLength(2);
+    view.unmount();
+    const { container } = render(Collection, { props: { state: { bags: [1, 1, 1], tray: 0 }, onmove: () => {}, locked: true, taken: [true, false, false], ontake: () => {} } });
+    expect(container.querySelectorAll('button.bag.taken')).toHaveLength(1);
+  });
+
   it('moves a tray marble into the first bag with the keyboard', async () => {
     const onmove = vi.fn();
     render(Collection, { props: { state: { bags: [0, 0], tray: 2 }, onmove } });
