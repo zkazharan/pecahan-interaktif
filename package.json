@@ -1,0 +1,35 @@
+{
+  "name": "pecahan-interaktif",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "e2e": "playwright test",
+    "size": "node scripts/check-size.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/svelte": "^5.4.2",
+    "@testing-library/user-event": "^14.6.7",
+    "@tsconfig/svelte": "^5.0.8",
+    "jsdom": "^29.1.1",
+    "svelte": "^5.57.1",
+    "svelte-check": "^4.7.6",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.2",
+    "vite-plugin-pwa": "^1.3.0",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@fontsource/caveat": "^5.3.0",
+    "@fontsource/lexend": "^5.3.0"
+  }
+}
