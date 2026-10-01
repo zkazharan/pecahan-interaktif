@@ -30,7 +30,15 @@ describe('Bar', () => {
     const widthOf = (id: string) => Number(container.querySelector(`[data-testid="bar-target-${id}"]`)?.getAttribute('width'));
     expect(widthOf('r')).toBeCloseTo(BAR.width, 3);
     expect(widthOf('a')).toBeCloseTo(BAR.width / 2, 3);
-    expect(container.querySelectorAll('[data-row="r"] .whole-line')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-row-lines="r"] .whole-line')).toHaveLength(1);
+  });
+
+  it('draws whole lines above the piece so its fill cannot cover them', () => {
+    const rows: BarRow[] = [{ id: 'r', value: frac(5, 4), color: 'var(--frac-3)', wholes: 2 }];
+    const { container } = render(Bar, { props: { rows, stacking: null } });
+    const piece = container.querySelector('[data-piece="r"]')!;
+    const line = container.querySelector('.whole-line')!;
+    expect(piece.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it('stacks a piece onto the other bar with the keyboard', async () => {

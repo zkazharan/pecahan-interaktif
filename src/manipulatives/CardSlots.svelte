@@ -40,7 +40,7 @@
       {@const cardId = placement[slot.id]}
       {@const card = cardId ? byId.get(cardId) : undefined}
       <li class="slot" data-testid={`slot-${slot.id}`} use:dropTarget={{ controller, id: slot.id, label: slot.label }}>
-        <span class="slot-label">{#if slot.value}<FractionText value={slot.value} />{:else}{slot.label}{/if}</span>
+        <span class="slot-label" class:valued={slot.value}>{#if slot.value}<FractionText value={slot.value} />{:else}{slot.label}{/if}</span>
         {#if card}
           {@render cardView(card)}
         {/if}
@@ -89,6 +89,10 @@
     font-size: 0.75em;
     font-weight: 600;
     color: var(--ink-soft);
+  }
+  .slot-label.valued {
+    font-size: 1em;
+    color: var(--ink);
   }
   .pile {
     min-height: 120px;

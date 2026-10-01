@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { equivalent, gcd, sameForm, simplify } from '../../../lib/fraction';
 import { createRng } from '../../../lib/random';
+import { maxCut } from '../../../manipulatives/bar';
 import type { Placement } from '../../../manipulatives/cardSlots';
-import { maxCut } from './params';
 import {
   checkTask,
   emptyAnswer,
@@ -79,7 +79,7 @@ describe('checkTask', () => {
     expect(problems).toEqual([]);
   });
 
-  it('rejects an equivalent but unsimplified card in the simplify task', () => {
+  it('rejects any card that is not the simplest form in the simplify task', () => {
     const task = generateTasks(createRng(3))[2];
     if (task.kind !== 'simplify') throw new Error('expected simplify');
     const wrong = task.cards.find((c) => c.id !== task.correctId)!;

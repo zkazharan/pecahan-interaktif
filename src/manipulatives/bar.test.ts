@@ -5,6 +5,8 @@ import {
   barUnits,
   dividerXs,
   hitBox,
+  maxCut,
+  MAX_PARTS,
   normalizeStacking,
   notePlacement,
   pieceDividerXs,
@@ -136,5 +138,15 @@ describe('re-cut and wholes', () => {
   it('marks the small parts inside the coloured piece', () => {
     expect(pieceDividerXs({ ...third, cut: 3 }, 1)).toHaveLength(2);
     expect(pieceDividerXs(third, 1)).toEqual([]);
+  });
+});
+
+describe('maxCut', () => {
+  it('keeps every whole at 24 parts or fewer', () => {
+    expect(MAX_PARTS).toBe(24);
+    expect(maxCut(2)).toBe(6);
+    expect(maxCut(4)).toBe(6);
+    expect(maxCut(5)).toBe(4);
+    expect(maxCut(8)).toBe(3);
   });
 });

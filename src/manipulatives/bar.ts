@@ -3,6 +3,12 @@ import { compare, type Fraction } from '../lib/fraction';
 export type BarRow = { id: string; value: Fraction; color: string; cut?: number; wholes?: number };
 export type Stacking = { pieceOf: string; onto: string } | null;
 
+export const MAX_PARTS = 24;
+
+export function maxCut(d: number): number {
+  return Math.min(6, Math.floor(MAX_PARTS / d));
+}
+
 export const BAR = {
   x0: 10,
   width: 820,

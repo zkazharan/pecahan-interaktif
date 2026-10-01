@@ -96,7 +96,7 @@ export function checkTask(task: BedaTask, answer: BedaAnswer): CheckResult {
     correct: false,
     hint:
       task.kind === 'add-recut'
-        ? 'Samakan potongannya dulu, lalu jumlahkan pembilangnya.'
-        : 'Samakan potongannya dulu, lalu kurangkan pembilangnya.',
+        ? 'Potongannya sudah sama besar. Jumlahkan pembilangnya saja.'
+        : 'Potongannya sudah sama besar. Kurangkan pembilangnya saja.',
   };
 }

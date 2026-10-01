@@ -4,10 +4,9 @@
   import HandNote from '../../../components/HandNote.svelte';
   import Bar from '../../../manipulatives/Bar.svelte';
   import CardSlots from '../../../manipulatives/CardSlots.svelte';
-  import type { BarRow } from '../../../manipulatives/bar';
+  import { maxCut, type BarRow } from '../../../manipulatives/bar';
   import type { TaskViewProps } from '../../types';
   import { PICK_SLOTS } from '../common';
-  import { maxCut } from '../senilai/params';
   import { targetCuts, type BedaAnswer, type BedaTask } from './tasks';
 
   let { task, answer, onanswer, feedback }: TaskViewProps<BedaTask, BedaAnswer> = $props();

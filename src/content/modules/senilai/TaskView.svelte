@@ -3,10 +3,10 @@
   import FractionText from '../../../components/FractionText.svelte';
   import Bar from '../../../manipulatives/Bar.svelte';
   import CardSlots from '../../../manipulatives/CardSlots.svelte';
+  import { maxCut } from '../../../manipulatives/bar';
   import type { Placement } from '../../../manipulatives/cardSlots';
   import type { TaskViewProps } from '../../types';
   import { PICK_SLOTS } from '../common';
-  import { maxCut } from './params';
   import type { SenilaiAnswer, SenilaiTask } from './tasks';
 
   let { task, answer, onanswer, feedback }: TaskViewProps<SenilaiTask, SenilaiAnswer> = $props();

@@ -67,7 +67,26 @@ describe('checkTask and isComplete', () => {
     expect(solution(task)).toEqual({ cuts: [3, 2], placement: { pilihan: 'c0' } });
     expect(checkTask(task, { cuts: [3, 2], placement: { pilihan: 'c1' } })).toEqual({
       correct: false,
-      hint: 'Samakan potongannya dulu, lalu jumlahkan pembilangnya.',
+      hint: 'Potongannya sudah sama besar. Jumlahkan pembilangnya saja.',
+    });
+  });
+
+  it('hints at subtracting numerators for a subtraction task', () => {
+    const task: BedaTask = {
+      kind: 'sub-recut',
+      a: frac(2, 3),
+      b: frac(1, 2),
+      common: 6,
+      cards: [
+        { id: 'c0', value: frac(1, 6) },
+        { id: 'c1', value: frac(1, 1) },
+        { id: 'c2', value: frac(2, 6) },
+      ],
+      correctId: 'c0',
+    };
+    expect(checkTask(task, { cuts: [2, 3], placement: { pilihan: 'c1' } })).toEqual({
+      correct: false,
+      hint: 'Potongannya sudah sama besar. Kurangkan pembilangnya saja.',
     });
   });
 });

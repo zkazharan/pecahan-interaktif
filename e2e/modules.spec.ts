@@ -59,8 +59,11 @@ test('senilai: Tunjukkan re-cuts the lower bar', async ({ page }) => {
 
 test('jumlah-penyebut-beda: the sum row spans two wholes', async ({ page }) => {
   await page.goto('./#/jumlah-penyebut-beda/peraga?a=3/4&b=2/3');
-  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Lanjut →' }).click();
-  await expect(page.locator('[data-row="hasil"] .whole-line')).toHaveCount(1);
+  for (let i = 0; i < 2; i++) await page.getByRole('button', { name: 'Lanjut →' }).click();
+  await expect(page.locator('[data-row="hasil"]')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Lanjut →' }).click();
+  await expect(page.locator('[data-row="hasil"]')).toHaveCount(1);
+  await expect(page.locator('[data-row-lines="hasil"] .whole-line')).toHaveCount(1);
 });
 
 test('home lists every module except 8 as ready', async ({ page }) => {

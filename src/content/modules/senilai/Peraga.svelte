@@ -5,10 +5,10 @@
   import HandNote from '../../../components/HandNote.svelte';
   import { frac } from '../../../lib/fraction';
   import Bar from '../../../manipulatives/Bar.svelte';
-  import type { BarRow } from '../../../manipulatives/bar';
+  import { maxCut, type BarRow } from '../../../manipulatives/bar';
   import PeragaFrame from '../../../pages/PeragaFrame.svelte';
   import type { PeragaProps } from '../../types';
-  import { EQUIV_LIMITS, maxCut, type EquivParams } from './params';
+  import { EQUIV_LIMITS, type EquivParams } from './params';
 
   let { params, onparams }: PeragaProps<EquivParams> = $props();
 

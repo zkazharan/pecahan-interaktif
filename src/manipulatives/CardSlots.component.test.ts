@@ -17,6 +17,13 @@ const SLOTS: Slot[] = [
 ];
 
 describe('CardSlots', () => {
+  it('marks a slot label that shows a fraction so it can be drawn larger', () => {
+    const slots: Slot[] = [{ id: 'v', label: 'Pecahan', value: frac(1, 3) }, { id: 'w', label: 'Tengah' }];
+    render(CardSlots, { props: { cards: CARDS, slots, placement: emptyPlacement(['v', 'w']), onplace: vi.fn() } });
+    expect(screen.getByTestId('slot-v').querySelector('.slot-label')).toHaveClass('valued');
+    expect(screen.getByTestId('slot-w').querySelector('.slot-label')).not.toHaveClass('valued');
+  });
+
   it('places a card with the keyboard', async () => {
     const onplace = vi.fn();
     render(CardSlots, { props: { cards: CARDS, slots: SLOTS, placement: emptyPlacement(['s1', 's2', 's3']), onplace } });

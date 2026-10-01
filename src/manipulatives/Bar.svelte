@@ -117,9 +117,6 @@
       {#each dividerXs(row, units) as x (x)}
         <line class="divider" x1={BAR.x0 + x} x2={BAR.x0 + x} y1={y} y2={y + BAR.rowHeight} />
       {/each}
-      {#each wholeXs(row, units) as x (x)}
-        <line class="whole-line" x1={BAR.x0 + x} x2={BAR.x0 + x} y1={y - 6} y2={y + BAR.rowHeight + 6} />
-      {/each}
       {#if stacking?.pieceOf === row.id}
         <rect class="ghost" data-ghost x={BAR.x0 + 6} y={y + 6} width={Math.max(pieceWidth(row.value, units) - 12, 0)} height={BAR.rowHeight - 12} />
       {/if}
@@ -147,6 +144,15 @@
           <line class="divider" x1={x} x2={x} y1={0} y2={BAR.rowHeight} />
         {/each}
       </g>
+    </g>
+  {/each}
+
+  {#each rows as row, i (row.id)}
+    {@const y = rowY(i)}
+    <g class="whole-lines" data-row-lines={row.id}>
+      {#each wholeXs(row, units) as x (x)}
+        <line class="whole-line" x1={BAR.x0 + x} x2={BAR.x0 + x} y1={y - 6} y2={y + BAR.rowHeight + 6} />
+      {/each}
     </g>
   {/each}
 
@@ -186,6 +192,7 @@
   .whole-line {
     stroke: var(--ink);
     stroke-width: 7;
+    pointer-events: none;
   }
   .ghost {
     fill: none;

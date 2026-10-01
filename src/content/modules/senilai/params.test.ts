@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EQUIV_DEFAULTS, formatEquivParams, maxCut, parseEquivParams } from './params';
+import { EQUIV_DEFAULTS, formatEquivParams, parseEquivParams } from './params';
 
 describe('parseEquivParams', () => {
   it('defaults to one half', () => {
@@ -14,14 +14,5 @@ describe('parseEquivParams', () => {
 
   it('round-trips', () => {
     expect(formatEquivParams({ f: { n: 2, d: 3 } })).toEqual({ f: '2/3' });
-  });
-});
-
-describe('maxCut', () => {
-  it('keeps every whole at 24 parts or fewer', () => {
-    expect(maxCut(2)).toBe(6);
-    expect(maxCut(4)).toBe(6);
-    expect(maxCut(5)).toBe(4);
-    expect(maxCut(8)).toBe(3);
   });
 });

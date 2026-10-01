@@ -1,14 +1,14 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import CountStepper from '../../../components/CountStepper.svelte';
   import FractionStepper from '../../../components/FractionStepper.svelte';
   import FractionText from '../../../components/FractionText.svelte';
   import HandNote from '../../../components/HandNote.svelte';
   import { frac, lcm, type Fraction } from '../../../lib/fraction';
   import Bar from '../../../manipulatives/Bar.svelte';
-  import { shownValue, type BarRow } from '../../../manipulatives/bar';
+  import { maxCut, shownValue, type BarRow } from '../../../manipulatives/bar';
   import PeragaFrame from '../../../pages/PeragaFrame.svelte';
   import type { PeragaProps } from '../../types';
-  import { maxCut } from '../senilai/params';
   import { DIFF_LIMITS, fitsCommon, type DiffParams } from './params';
 
   let { params, onparams }: PeragaProps<DiffParams> = $props();
@@ -18,6 +18,7 @@
   let step = $state(0);
   let cutA = $state(1);
   let cutB = $state(1);
+  let rejected = $state(false);
 
   const common = $derived(lcm(params.a.d, params.b.d));
   const ka = $derived(common / params.a.d);
@@ -34,8 +35,20 @@
       : [rowA, rowB],
   );
 
+  $effect.pre(() => {
+    void params.a.n;
+    void params.a.d;
+    void params.b.n;
+    void params.b.d;
+    untrack(() => {
+      cutA = 1;
+      cutB = 1;
+    });
+  });
+
   function goTo(next: number): void {
     step = next;
+    rejected = false;
     cutA = 1;
     cutB = 1;
   }
@@ -46,11 +59,13 @@
   }
 
   function setA(a: Fraction): void {
-    if (fitsCommon(a, params.b)) onparams({ ...params, a });
+    rejected = !fitsCommon(a, params.b);
+    if (!rejected) onparams({ ...params, a });
   }
 
   function setB(b: Fraction): void {
-    if (fitsCommon(params.a, b)) onparams({ ...params, b });
+    rejected = !fitsCommon(params.a, b);
+    if (!rejected) onparams({ ...params, b });
   }
 </script>
 
@@ -70,8 +85,11 @@
   {#snippet stage()}
     <div class="stage">
       <Bar {rows} stacking={null} />
-      {#if step >= 1 && equalParts}
+      {#if (step === 1 || step === 2) && equalParts}
         <HandNote color="blue">sama besar!</HandNote>
+      {/if}
+      {#if rejected}
+        <HandNote>Potongannya terlalu banyak. Pilih pecahan lain.</HandNote>
       {/if}
     </div>
   {/snippet}
