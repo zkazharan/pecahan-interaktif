@@ -36,6 +36,7 @@
   );
   const rows = $derived(staggerRows(placed.map((p) => p.index), total));
 
+  const hasBelow = $derived(marks.some((mark) => mark.side === 'below'));
   const markSets = $derived(
     marks.map((mark) => ({
       ...mark,
@@ -69,9 +70,6 @@
         {@const x = tickX(k, max, perUnit)}
         {@const major = k % perUnit === 0}
         <line class="tick" class:major x1={x} x2={x} y1={LINE.y - (major ? LINE.majorHalf : LINE.tickHalf)} y2={LINE.y + (major ? LINE.majorHalf : LINE.tickHalf)} />
-        {#if major}
-          <text class="unit" {x} y={LINE.labelY}>{k / perUnit}</text>
-        {/if}
       {/each}
       {#each markSets as set, i (i)}
         {#each set.xs as x (x)}
@@ -79,6 +77,13 @@
         {/each}
       {/each}
     </svg>
+    <div class="labels" class:tight={!hasBelow} aria-hidden="true">
+      {#each ticks as id, k (id)}
+        {#if k % perUnit === 0}
+          <span class="unit" style:left={left(k)}>{k / perUnit}</span>
+        {/if}
+      {/each}
+    </div>
     {#each ticks as id, k (id)}
       <div
         class="tick-target"
@@ -159,10 +164,19 @@
     stroke-width: 8;
     stroke-linecap: round;
   }
+  .labels {
+    position: relative;
+    height: 1.5em;
+    font: 700 20px/1.5 var(--font-body);
+    color: var(--ink);
+  }
+  .labels.tight {
+    margin-top: -3cqw;
+  }
   .unit {
-    font: 700 34px var(--font-body);
-    fill: var(--ink);
-    text-anchor: middle;
+    position: absolute;
+    top: 0;
+    translate: -50% 0;
   }
   .tick-target {
     position: absolute;
@@ -187,6 +201,9 @@
     }
     .line-area {
       --pin-card: 108px;
+    }
+    .labels {
+      font-size: 30px;
     }
   }
   .pile {

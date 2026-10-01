@@ -15,7 +15,7 @@ describe('NumberLine', () => {
     const { container } = render(NumberLine, {
       props: { max: 3, perUnit: 2, cards: [], placement: emptyPlacement(tickIds(3, 2)), onplace: vi.fn() },
     });
-    expect([...container.querySelectorAll('text.unit')].map((t) => t.textContent)).toEqual(['0', '1', '2', '3']);
+    expect([...container.querySelectorAll('.unit')].map((t) => t.textContent)).toEqual(['0', '1', '2', '3']);
     expect(container.querySelectorAll('[data-tick]')).toHaveLength(7);
   });
 

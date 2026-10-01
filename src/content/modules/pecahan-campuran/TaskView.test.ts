@@ -22,7 +22,7 @@ describe('pecahan-campuran TaskView', () => {
 
   it('shows a 0 to 3 line for line tasks', () => {
     const { container } = render(TaskView, { props: { task: line, answer: emptyAnswer(line), onanswer: vi.fn(), feedback: 'none' } });
-    expect([...container.querySelectorAll('text.unit')].map((t) => t.textContent)).toEqual(['0', '1', '2', '3']);
+    expect([...container.querySelectorAll('.unit')].map((t) => t.textContent)).toEqual(['0', '1', '2', '3']);
   });
 
   it('offers three mixed-number cards', () => {

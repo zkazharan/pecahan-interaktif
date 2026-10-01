@@ -5,10 +5,9 @@ export const LINE = {
   width: 900,
   y: 52,
   viewWidth: 1000,
-  viewHeight: 148,
+  viewHeight: 110,
   tickHalf: 16,
   majorHalf: 28,
-  labelY: 142,
   markGap: 2,
   markLength: 24,
 } as const;
