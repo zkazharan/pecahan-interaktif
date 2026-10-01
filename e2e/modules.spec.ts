@@ -4,7 +4,10 @@ import { dragTo, solveCurrentTask } from './helpers';
 const MODULES = [
   { slug: 'membagi-adil', heading: '1 · Membagi adil' },
   { slug: 'membaca-pecahan', heading: '2 · Pembilang, penyebut, garis bilangan' },
+  { slug: 'senilai', heading: '4 · Pecahan senilai' },
   { slug: 'pecahan-campuran', heading: '5 · Pecahan campuran' },
+  { slug: 'jumlah-penyebut-sama', heading: '6 · Jumlah & kurang, penyebut sama' },
+  { slug: 'jumlah-penyebut-beda', heading: '7 · Jumlah & kurang, penyebut beda' },
 ];
 
 for (const mod of MODULES) {
@@ -47,10 +50,31 @@ test('pecahan-campuran: teacher drags a piece onto a plate', async ({ page }) =>
   await expect(page.getByTestId('plate-0').locator('[data-plate-piece]')).toHaveCount(1);
 });
 
-test('home lists modules 1, 2, 3 and 5 as ready', async ({ page }) => {
+test('senilai: Tunjukkan re-cuts the lower bar', async ({ page }) => {
+  await page.goto('./#/senilai/peraga?f=1/2');
+  await page.getByRole('button', { name: 'Lanjut →' }).click();
+  await page.getByRole('button', { name: 'Tunjukkan' }).click();
+  await expect(page.locator('[data-row="ulang"] .divider')).toHaveCount(3);
+});
+
+test('jumlah-penyebut-beda: the sum row spans two wholes', async ({ page }) => {
+  await page.goto('./#/jumlah-penyebut-beda/peraga?a=3/4&b=2/3');
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Lanjut →' }).click();
+  await expect(page.locator('[data-row="hasil"] .whole-line')).toHaveCount(1);
+});
+
+test('home lists every module except 8 as ready', async ({ page }) => {
   await page.goto('./');
-  for (const name of [/Membagi adil/, /Pembilang, penyebut/, /Membandingkan pecahan/, /Pecahan campuran/]) {
+  for (const name of [
+    /Membagi adil/,
+    /Pembilang, penyebut/,
+    /Membandingkan pecahan/,
+    /Pecahan senilai/,
+    /Pecahan campuran/,
+    /penyebut sama/,
+    /penyebut beda/,
+  ]) {
     await expect(page.getByRole('link', { name })).toBeVisible();
   }
-  await expect(page.getByText('sedang disiapkan')).toHaveCount(4);
+  await expect(page.getByText('sedang disiapkan')).toHaveCount(1);
 });

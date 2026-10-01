@@ -88,5 +88,28 @@ export async function solveCurrentTask(page: Page): Promise<void> {
     }
     return;
   }
+  if (kind === 'recut') {
+    const k = Number(await attr('data-k'));
+    for (let i = 1; i < k; i++) await page.getByRole('button', { name: 'Tambah potong ulang', exact: true }).click();
+    return;
+  }
+  if (kind === 'pair') {
+    const solution = JSON.parse(await attr('data-solution')) as Record<string, string>;
+    for (const [slot, card] of Object.entries(solution)) {
+      await dragTo(page, page.locator(`[data-card="${card}"]`), page.getByTestId(`slot-${slot}`));
+    }
+    return;
+  }
+  if (kind === 'simplify' || kind === 'add' || kind === 'sub') {
+    await dragTo(page, page.locator(`[data-card="${await attr('data-correct')}"]`), page.getByTestId('slot-pilihan'));
+    return;
+  }
+  if (kind === 'add-recut' || kind === 'sub-recut') {
+    const [ka, kb] = (await attr('data-cuts')).split(',').map(Number);
+    for (let i = 1; i < ka; i++) await page.getByRole('button', { name: 'Tambah potong ulang pita pertama' }).click();
+    for (let i = 1; i < kb; i++) await page.getByRole('button', { name: 'Tambah potong ulang pita kedua' }).click();
+    await dragTo(page, page.locator(`[data-card="${await attr('data-correct')}"]`), page.getByTestId('slot-pilihan'));
+    return;
+  }
   throw new Error(`unknown task kind: ${kind}`);
 }
