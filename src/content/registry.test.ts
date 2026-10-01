@@ -24,6 +24,10 @@ describe('nextReadyModule', () => {
 });
 
 describe('registered modules', () => {
+  it('has membagi-adil ready', () => {
+    expect(findModule('membagi-adil')?.slug).toBe('membagi-adil');
+  });
+
   it('has membandingkan ready', () => {
     expect(findModule('membandingkan')?.slug).toBe('membandingkan');
   });
