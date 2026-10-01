@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { equivalent, frac } from '../../../lib/fraction';
+import { equivalent, frac, lcm } from '../../../lib/fraction';
 import { createRng } from '../../../lib/random';
-import type { Placement } from '../../../manipulatives/cardSlots';
+import { emptyPlacement, type Placement } from '../../../manipulatives/cardSlots';
+import { tickIds } from '../../../manipulatives/numberLine';
 import {
   checkTask,
   emptyAnswer,
@@ -22,36 +23,52 @@ function permutations<T>(items: T[]): T[][] {
 function allAnswers(task: MembandingkanTask): Placement[] {
   const ids = task.cards.map((c) => c.id);
   if (task.kind === 'compare') return ids.map((id) => ({ besar: id }));
-  return permutations(ids).map(([s1, s2, s3]) => ({ s1, s2, s3 }));
+  if (task.kind === 'order') return permutations(ids).map(([s1, s2, s3]) => ({ s1, s2, s3 }));
+  const ticks = tickIds(1, task.perUnit);
+  const out: Placement[] = [];
+  for (const a of ticks) {
+    for (const b of ticks) if (a !== b) out.push({ ...emptyPlacement(ticks), [a]: ids[0], [b]: ids[1] });
+  }
+  return out;
 }
 
 describe('generateTasks', () => {
-  it('always makes 5 tasks in the planned order', () => {
+  it('always makes compare, order, compare, order, line', () => {
+    const problems: string[] = [];
     for (const seed of SEEDS) {
       const tasks = generateTasks(createRng(seed));
-      expect(tasks.map((t) => t.kind)).toEqual(['compare', 'order', 'compare', 'order', 'order']);
-      expect(tasks.map((t) => t.cards.length)).toEqual([2, 3, 2, 3, 3]);
+      const shape = tasks.map((t) => `${t.kind}${t.cards.length}`).join(',');
+      if (shape !== 'compare2,order3,compare2,order3,line2') problems.push(`${seed}: ${shape}`);
     }
+    expect(problems).toEqual([]);
   });
 
-  it('keeps every fraction proper, within /2–/12, and distinct in value', () => {
+  it('keeps every fraction proper and distinct, with the planned numerators', () => {
+    const problems: string[] = [];
     for (const seed of SEEDS) {
       generateTasks(createRng(seed)).forEach((task, index) => {
         const values = task.cards.map((c) => c.value);
         for (const v of values) {
-          expect(v.d).toBeGreaterThanOrEqual(2);
-          expect(v.d).toBeLessThanOrEqual(12);
-          expect(v.n).toBeGreaterThanOrEqual(1);
-          expect(v.n).toBeLessThan(v.d);
-          if (index < 2) expect(v.n).toBe(1);
-          else expect(v.n).toBeGreaterThanOrEqual(2);
+          if (v.d < 2 || v.d > 12 || v.n < 1 || v.n >= v.d) problems.push(`${seed}/${index}: ${v.n}/${v.d}`);
+          if (index < 2 && v.n !== 1) problems.push(`${seed}/${index}: unit`);
+          if ((index === 2 || index === 3) && v.n < 2) problems.push(`${seed}/${index}: non-unit`);
         }
-        for (let i = 0; i < values.length; i++) {
-          for (let j = i + 1; j < values.length; j++) expect(equivalent(values[i], values[j])).toBe(false);
-        }
-        expect(new Set(task.cards.map((c) => c.id)).size).toBe(task.cards.length);
+        if (values.some((a, i) => values.some((b, j) => i < j && equivalent(a, b)))) problems.push(`${seed}/${index}: equal values`);
+        if (new Set(task.cards.map((c) => c.id)).size !== task.cards.length) problems.push(`${seed}/${index}: ids`);
       });
     }
+    expect(problems).toEqual([]);
+  });
+
+  it('divides the line by the lcm of two different small denominators', () => {
+    const problems: string[] = [];
+    for (const seed of SEEDS) {
+      const line = generateTasks(createRng(seed))[4];
+      if (line.kind !== 'line') continue;
+      const [a, b] = line.cards.map((c) => c.value);
+      if (a.d === b.d || a.d > 6 || b.d > 6 || line.perUnit !== lcm(a.d, b.d) || line.perUnit > 12) problems.push(`${seed}`);
+    }
+    expect(problems).toEqual([]);
   });
 
   it('is deterministic for a seed', () => {
@@ -61,12 +78,14 @@ describe('generateTasks', () => {
 
 describe('checkTask', () => {
   it('accepts exactly one arrangement, and it is the solution', () => {
+    const problems: string[] = [];
     for (const seed of SEEDS.slice(0, 200)) {
       for (const task of generateTasks(createRng(seed))) {
         const correct = allAnswers(task).filter((answer) => checkTask(task, answer).correct);
-        expect(correct).toEqual([solution(task)]);
+        if (correct.length !== 1 || JSON.stringify(correct[0]) !== JSON.stringify(solution(task))) problems.push(`${seed}: ${task.kind}`);
       }
     }
+    expect(problems).toEqual([]);
   });
 
   it('rejects the classic 1/4 > 1/3 mistake with a stacking hint', () => {
@@ -88,15 +107,41 @@ describe('checkTask', () => {
     const wrong = allAnswers(task).find((answer) => !checkTask(task, answer).correct)!;
     expect(checkTask(task, wrong).hint).toBe('Bandingkan dua-dua dulu. Buka pitanya kalau bingung.');
   });
+
+  it('gives the line hint with the number of small parts', () => {
+    const task: MembandingkanTask = {
+      kind: 'line',
+      perUnit: 12,
+      cards: [
+        { id: 'c0', value: frac(1, 3) },
+        { id: 'c1', value: frac(1, 4) },
+      ],
+    };
+    const swapped = { ...emptyPlacement(tickIds(1, 12)), t3: 'c0', t4: 'c1' };
+    expect(checkTask(task, swapped)).toEqual({
+      correct: false,
+      hint: 'Bagi garis jadi 12 bagian kecil, lalu hitung langkah untuk setiap kartu.',
+    });
+  });
 });
 
 describe('isComplete and emptyAnswer', () => {
   it('needs every slot filled', () => {
     const task = generateTasks(createRng(9))[1];
+    if (task.kind === 'line') throw new Error('expected an order task');
     const empty = emptyAnswer(task);
     expect(Object.keys(empty)).toEqual(slotsFor(task).map((s) => s.id));
     expect(isComplete(task, empty)).toBe(false);
     expect(isComplete(task, { ...empty, s1: 'c0', s2: 'c1' })).toBe(false);
+    expect(isComplete(task, solution(task))).toBe(true);
+  });
+
+  it('needs both cards on the line', () => {
+    const task = generateTasks(createRng(9))[4];
+    if (task.kind !== 'line') throw new Error('expected a line task');
+    const empty = emptyAnswer(task);
+    expect(Object.keys(empty)).toEqual(tickIds(1, task.perUnit));
+    expect(isComplete(task, { ...empty, t0: 'c0' })).toBe(false);
     expect(isComplete(task, solution(task))).toBe(true);
   });
 });

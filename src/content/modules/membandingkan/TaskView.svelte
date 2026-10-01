@@ -1,6 +1,7 @@
 <script lang="ts">
   import Bar from '../../../manipulatives/Bar.svelte';
   import CardSlots from '../../../manipulatives/CardSlots.svelte';
+  import NumberLine from '../../../manipulatives/NumberLine.svelte';
   import { stackNote, type BarRow, type Stacking } from '../../../manipulatives/bar';
   import { compare } from '../../../lib/fraction';
   import type { Placement } from '../../../manipulatives/cardSlots';
@@ -31,23 +32,31 @@
   });
 </script>
 
-<p class="question">
-  {#if task.kind === 'compare'}
-    Mana yang <span class="hl">lebih besar</span>? Taruh kartunya di kotak.
+<div class="task" data-task-kind={task.kind} data-per-unit={task.kind === 'line' ? String(task.perUnit) : undefined}>
+  <p class="question">
+    {#if task.kind === 'compare'}
+      Mana yang <span class="hl">lebih besar</span>? Taruh kartunya di kotak.
+    {:else if task.kind === 'order'}
+      Urutkan dari yang <span class="hl">paling kecil</span>.
+    {:else}
+      Taruh kedua kartu di <span class="hl">garis bilangan</span>.
+    {/if}
+  </p>
+
+  {#if task.kind === 'line'}
+    <NumberLine max={1} perUnit={task.perUnit} cards={task.cards} placement={answer} onplace={onanswer} {locked} />
   {:else}
-    Urutkan dari yang <span class="hl">paling kecil</span>.
+    <CardSlots cards={task.cards} slots={slotsFor(task)} placement={answer} onplace={onanswer} {locked} />
   {/if}
-</p>
 
-<CardSlots cards={task.cards} slots={slotsFor(task)} placement={answer} onplace={onanswer} {locked} />
-
-{#if showAid}
-  <div class="aid">
-    <Bar {rows} stacking={shownStacking} draggable={!locked} note={stackNote(rows, shownStacking)} onstack={(next) => (stacking = next)} />
-  </div>
-{:else}
-  <button type="button" class="aid-toggle" onclick={() => (aidOpen = true)}>bingung? buka pitanya ↓</button>
-{/if}
+  {#if showAid}
+    <div class="aid">
+      <Bar {rows} stacking={shownStacking} draggable={!locked} note={stackNote(rows, shownStacking)} onstack={(next) => (stacking = next)} />
+    </div>
+  {:else}
+    <button type="button" class="aid-toggle" onclick={() => (aidOpen = true)}>bingung? buka pitanya ↓</button>
+  {/if}
+</div>
 
 <style>
   .question {

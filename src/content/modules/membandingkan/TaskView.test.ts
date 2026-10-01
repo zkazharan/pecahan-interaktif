@@ -56,4 +56,28 @@ describe('membandingkan TaskView', () => {
     render(TaskView, { props: { task: COMPARE, answer: { besar: 'c0' }, onanswer: vi.fn(), feedback: 'correct' } });
     expect(screen.getByRole('button', { name: 'Kartu sepertiga' })).toHaveAttribute('aria-disabled', 'true');
   });
+
+  it('shows a number line for line tasks', () => {
+    const task: MembandingkanTask = {
+      kind: 'line',
+      perUnit: 12,
+      cards: [
+        { id: 'c0', value: frac(1, 3) },
+        { id: 'c1', value: frac(1, 4) },
+      ],
+    };
+    const { container } = render(TaskView, {
+      props: { task, answer: Object.fromEntries(Array.from({ length: 13 }, (_, k) => [`t${k}`, null])), onanswer: vi.fn(), feedback: 'none' },
+    });
+    const root = container.querySelector('[data-task-kind="line"]')!;
+    expect(root.getAttribute('data-per-unit')).toBe('12');
+    expect(container.querySelectorAll('[data-tick]')).toHaveLength(13);
+    expect(screen.getByTestId('line-pile').querySelectorAll('[data-card]')).toHaveLength(2);
+    expect(screen.getByRole('button', { name: 'bingung? buka pitanya ↓' })).toBeInTheDocument();
+  });
+
+  it('marks compare tasks for the e2e helper', () => {
+    const { container } = render(TaskView, { props: { task: COMPARE, answer: { besar: null }, onanswer: vi.fn(), feedback: 'none' } });
+    expect(container.querySelector('[data-task-kind="compare"]')).not.toBeNull();
+  });
 });
