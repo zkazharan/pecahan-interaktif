@@ -8,7 +8,7 @@
   const mod = $derived(route.name === 'module' ? findModule(route.slug) : undefined);
 
   $effect(() => {
-    if (route.name === 'module' && !mod) router.go({ name: 'home' });
+    if (route.name === 'module' && !mod) router.replace({ name: 'home' });
   });
 </script>
 
