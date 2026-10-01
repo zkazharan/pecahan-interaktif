@@ -24,6 +24,15 @@ describe('nextReadyModule', () => {
 });
 
 describe('registered modules', () => {
+  it('has pecahan-dari-jumlah ready', () => {
+    expect(findModule('pecahan-dari-jumlah')?.slug).toBe('pecahan-dari-jumlah');
+    expect(nextReadyModule('jumlah-penyebut-beda')?.slug).toBe('pecahan-dari-jumlah');
+  });
+
+  it('has a module for every catalog slug', () => {
+    expect(CATALOG.every((entry) => findModule(entry.slug) !== undefined)).toBe(true);
+  });
+
   it('has jumlah-penyebut-beda ready', () => {
     expect(findModule('jumlah-penyebut-beda')?.slug).toBe('jumlah-penyebut-beda');
     expect(nextReadyModule('jumlah-penyebut-sama')?.slug).toBe('jumlah-penyebut-beda');
