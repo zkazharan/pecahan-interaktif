@@ -3,10 +3,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { frac } from '../../../lib/fraction';
 import { createRng } from '../../../lib/random';
 import TaskView from './TaskView.svelte';
-import { emptyAnswer, generateTasks, type MembacaTask } from './tasks';
+import { emptyAnswer, generateTasks, shadeDiff, type MembacaTask } from './tasks';
 
 const shade: MembacaTask = { kind: 'shade', target: frac(2, 5) };
 const [, , line, , read] = generateTasks(createRng(7));
+
+function outlinedSlices(container: HTMLElement): number[] {
+  const wedges = [...container.querySelectorAll('[data-slice]')].map((el) => el.getAttribute('d'));
+  return [...container.querySelectorAll('[data-outlined]')].map((el) => wedges.indexOf(el.getAttribute('d')));
+}
 
 describe('membaca-pecahan TaskView', () => {
   it('toggles a slice in the answer', async () => {
@@ -34,5 +39,73 @@ describe('membaca-pecahan TaskView', () => {
     expect(container.querySelector('[data-task-kind="read"]')).toHaveAttribute('data-correct', read.kind === 'read' ? read.correctId : '');
     expect(container.querySelectorAll('[data-card]')).toHaveLength(3);
     expect(container.querySelectorAll('[data-slice]').length).toBeGreaterThan(0);
+  });
+
+  it('outlines the missing slices on a shade task', () => {
+    const task: MembacaTask = { kind: 'shade', target: frac(3, 6) };
+    const { container } = render(TaskView, { props: { task, answer: { shaded: [false, false, false, false, true, false], placement: {} }, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-task-kind="shade"]')).toHaveAttribute('data-diff', 'true');
+    expect(outlinedSlices(container)).toEqual([0, 1]);
+  });
+
+  it('outlines the extra slices on a shade task', () => {
+    const task: MembacaTask = { kind: 'shade', target: frac(1, 4) };
+    const { container } = render(TaskView, { props: { task, answer: { shaded: [true, true, true, false], placement: {} }, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(outlinedSlices(container)).toEqual([1, 2]);
+  });
+
+  it('outlines nothing without diff', () => {
+    const task: MembacaTask = { kind: 'shade', target: frac(3, 6) };
+    const { container } = render(TaskView, { props: { task, answer: { shaded: [false, false, false, false, true, false], placement: {} }, onanswer: vi.fn(), feedback: 'wrong' } });
+    expect(container.querySelectorAll('[data-outlined]')).toHaveLength(0);
+    expect(container.querySelector('[data-diff]')).toBeNull();
+  });
+
+  it('shows the placed value on the line while the wrong answer is on screen', () => {
+    const task: MembacaTask = { kind: 'line', card: { id: 'c0', value: frac(3, 4) }, perUnit: 4 };
+    const answer = { shaded: [], placement: { ...emptyAnswer(task).placement, t2: 'c0' } };
+    const { container } = render(TaskView, { props: { task, answer, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-placed-value="2/4"]')).not.toBeNull();
+  });
+
+  it('hides the placed value without diff', () => {
+    const task: MembacaTask = { kind: 'line', card: { id: 'c0', value: frac(3, 4) }, perUnit: 4 };
+    const answer = { shaded: [], placement: { ...emptyAnswer(task).placement, t2: 'c0' } };
+    const { container } = render(TaskView, { props: { task, answer, onanswer: vi.fn(), feedback: 'wrong' } });
+    expect(container.querySelector('[data-placed-value]')).toBeNull();
+  });
+
+  it('draws the chosen read card as fraction circles', () => {
+    const task: MembacaTask = {
+      kind: 'read',
+      shaded: frac(1, 3),
+      correctId: 'c0',
+      cards: [
+        { id: 'c0', value: frac(1, 3) },
+        { id: 'c1', value: frac(3, 2) },
+        { id: 'c2', value: frac(2, 3) },
+      ],
+    };
+    const { container } = render(TaskView, { props: { task, answer: { shaded: [], placement: { pilihan: 'c1' } }, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelectorAll('[data-testid="diff"] [data-testid="fraction-circles"] svg')).toHaveLength(2);
+  });
+
+  it('draws no read difference when no card is chosen', () => {
+    const { container } = render(TaskView, { props: { task: read, answer: emptyAnswer(read), onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-testid="diff"]')).toBeNull();
+  });
+});
+
+describe('shadeDiff', () => {
+  it('marks the first unshaded slices when too few are shaded', () => {
+    expect(shadeDiff(frac(3, 6), [false, false, false, false, true, false])).toEqual([true, true, false, false, false, false]);
+  });
+
+  it('marks the last shaded slices when too many are shaded', () => {
+    expect(shadeDiff(frac(1, 4), [true, true, true, false])).toEqual([false, true, true, false]);
+  });
+
+  it('marks nothing when the count is right', () => {
+    expect(shadeDiff(frac(2, 4), [true, false, true, false])).toEqual([false, false, false, false]);
   });
 });

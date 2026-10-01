@@ -38,4 +38,39 @@ describe('membagi-adil TaskView', () => {
     expect(root.getAttribute('data-correct')).toBe(pick.kind === 'pick' ? pick.correctId : '');
     expect(screen.getAllByRole('button', { name: /^Kartu martabak/ })).toHaveLength(3);
   });
+
+  it('draws equal-cut guides on the cut task while the wrong answer is on screen', () => {
+    const task = { kind: 'cut' as const, target: 5 };
+    const { container } = render(TaskView, { props: { task, answer: { placement: {}, cuts: 3 }, onanswer: () => {}, feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-task-kind="cut"]')).toHaveAttribute('data-diff', 'true');
+    expect(container.querySelectorAll('[data-guide]')).toHaveLength(5);
+  });
+
+  it('draws nothing extra without diff', () => {
+    const task = { kind: 'cut' as const, target: 5 };
+    const { container } = render(TaskView, { props: { task, answer: { placement: {}, cuts: 3 }, onanswer: () => {}, feedback: 'wrong' } });
+    expect(container.querySelectorAll('[data-guide]')).toHaveLength(0);
+    expect(container.querySelector('[data-diff]')).toBeNull();
+    expect(container.querySelector('[data-testid="diff"]')).toBeNull();
+  });
+
+  it('draws guides over the sort card while the wrong answer is on screen', () => {
+    const slices = sort.kind === 'sort' && sort.card.face?.kind === 'shape' ? sort.card.face.slices.length : 0;
+    const { container } = render(TaskView, { props: { task: sort, answer: emptyAnswer(sort), onanswer: () => {}, feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-task-kind="sort"]')).toHaveAttribute('data-diff', 'true');
+    expect(container.querySelectorAll('[data-testid="diff"] [data-guide]')).toHaveLength(slices);
+    expect(container.querySelector('[data-testid="diff"]')).toHaveTextContent('Garis merah: kalau dipotong sama besar');
+  });
+
+  it('draws the chosen pick card with guides for the target', () => {
+    const task = pick as Extract<MembagiAdilTask, { kind: 'pick' }>;
+    const wrong = task.cards.find((card) => card.id !== task.correctId)!;
+    const { container } = render(TaskView, { props: { task, answer: { placement: { pilihan: wrong.id }, cuts: 1 }, onanswer: () => {}, feedback: 'wrong', diff: true } });
+    expect(container.querySelectorAll('[data-testid="diff"] [data-guide]')).toHaveLength(task.target);
+  });
+
+  it('draws no pick difference when no card is chosen', () => {
+    const { container } = render(TaskView, { props: { task: pick, answer: emptyAnswer(pick), onanswer: () => {}, feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-testid="diff"]')).toBeNull();
+  });
 });

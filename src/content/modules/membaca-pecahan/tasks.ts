@@ -56,6 +56,29 @@ export function emptyAnswer(task: MembacaTask): MembacaAnswer {
   return { shaded: [], placement: emptyPlacement(['pilihan']) };
 }
 
+export function shadeDiff(target: Fraction, shaded: readonly boolean[]): boolean[] {
+  const count = shaded.filter(Boolean).length;
+  const out = shaded.map(() => false);
+  if (count < target.n) {
+    let need = target.n - count;
+    shaded.forEach((on, i) => {
+      if (!on && need > 0) {
+        out[i] = true;
+        need -= 1;
+      }
+    });
+  } else if (count > target.n) {
+    let extra = count - target.n;
+    for (let i = shaded.length - 1; i >= 0 && extra > 0; i--) {
+      if (shaded[i]) {
+        out[i] = true;
+        extra -= 1;
+      }
+    }
+  }
+  return out;
+}
+
 export function isComplete(task: MembacaTask, answer: MembacaAnswer): boolean {
   if (task.kind === 'shade') return answer.shaded.some(Boolean);
   if (task.kind === 'line') return Object.values(answer.placement).includes(task.card.id);
