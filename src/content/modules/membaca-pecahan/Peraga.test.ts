@@ -47,6 +47,33 @@ describe('membaca-pecahan Peraga', () => {
     expect(view.container.querySelectorAll('[data-tick]')).toHaveLength(4);
   });
 
+  it('keeps the displayed shading equal to the fraction from step 2', async () => {
+    const { view, user } = setup();
+    await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    await user.click(next());
+    expect(screen.getByRole('group', { name: 'Martabak dipotong 4 sama besar, 3 diarsir' })).toBeInTheDocument();
+    await view.rerender({ params: { f: frac(2, 4) } });
+    expect(screen.getByRole('group', { name: 'Martabak dipotong 4 sama besar, 2 diarsir' })).toBeInTheDocument();
+    await view.rerender({ params: { f: frac(3, 4) } });
+    expect(screen.getByRole('group', { name: 'Martabak dipotong 4 sama besar, 3 diarsir' })).toBeInTheDocument();
+  });
+
+  it('clears shading and the line card when going back to step 0', async () => {
+    const { view, user } = setup();
+    const back = () => screen.getByRole('button', { name: '← Sebelumnya' });
+    await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    await user.click(back());
+    expect(view.container.querySelectorAll('[data-slice][style*="fill"]')).toHaveLength(0);
+    for (let i = 0; i < 3; i++) await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    expect(view.container.querySelector('.pin [data-card="f"]')).not.toBeNull();
+    for (let i = 0; i < 3; i++) await user.click(back());
+    for (let i = 0; i < 3; i++) await user.click(next());
+    expect(screen.getByTestId('line-pile').querySelector('[data-card="f"]')).not.toBeNull();
+  });
+
   it('reports stepper changes as new params', async () => {
     const { onparams, user } = setup();
     await user.click(screen.getByRole('button', { name: 'Tambah penyebut Pecahan' }));

@@ -22,6 +22,8 @@
   const n = $derived(params.f.n);
   const shadedNow = $derived(Array.from({ length: d }, (_, i) => shaded[i] ?? false));
   const count = $derived(shadedNow.filter(Boolean).length);
+  const displayShaded = $derived(step >= 2 ? Array.from({ length: d }, (_, i) => i < n) : shadedNow);
+  const displayCount = $derived(displayShaded.filter(Boolean).length);
   const card: Card = $derived({ id: 'f', value: params.f });
   const linePlacement = $derived(Object.fromEntries(tickIds(1, d).map((id) => [id, placement[id] ?? null])));
 
@@ -65,9 +67,9 @@
       <div class="stage">
         <Circle
           slices={equalSlices(d)}
-          shaded={shadedNow}
+          shaded={displayShaded}
           onshade={step === 1 ? toggle : undefined}
-          label={`Martabak dipotong ${d} sama besar, ${count} diarsir`}
+          label={`Martabak dipotong ${d} sama besar, ${displayCount} diarsir`}
           size="lg"
         />
         {#if step === 2}
