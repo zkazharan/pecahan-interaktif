@@ -99,12 +99,15 @@
     grid-template-rows: auto 1fr;
     justify-items: center;
     align-items: center;
-    padding: 0.3em;
+    row-gap: 0.5em;
+    padding: 0.4em 0.3em 0.9em;
     border: 3px dashed var(--ink-soft);
     border-radius: var(--radius);
     background: rgba(255, 255, 255, 0.55);
   }
   .slot-label {
+    position: relative;
+    z-index: 1;
     font-size: 0.75em;
     font-weight: 600;
     color: var(--ink-soft);
