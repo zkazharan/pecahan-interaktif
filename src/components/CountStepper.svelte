@@ -15,7 +15,7 @@
 <div class="count" role="group" aria-label={label}>
   <span class="label">{label}</span>
   <button type="button" class="step" aria-label={`Kurangi ${lower}`} disabled={disabled || value <= min} onclick={() => onchange(value - 1)}>−</button>
-  <output class="value" role="status">{value}</output>
+  <output class="value">{value}</output>
   <button type="button" class="step" aria-label={`Tambah ${lower}`} disabled={disabled || value >= max} onclick={() => onchange(value + 1)}>+</button>
 </div>
 
