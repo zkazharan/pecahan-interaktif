@@ -112,12 +112,14 @@
   }
   .row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 1em;
   }
   .plate {
     position: relative;
-    width: min(42vw, 220px);
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 220px;
     aspect-ratio: 1;
   }
   .layer {
@@ -185,7 +187,7 @@
   }
   @media (min-width: 1600px) {
     .plate {
-      width: 300px;
+      max-width: 300px;
     }
     .tray-piece {
       width: 96px;
