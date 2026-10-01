@@ -1,10 +1,12 @@
 import { CATALOG, type CatalogEntry } from './catalog';
 import { membagiAdil } from './modules/membagi-adil';
+import { membacaPecahan } from './modules/membaca-pecahan';
 import { membandingkan } from './modules/membandingkan';
 import type { ModuleDef } from './types';
 
 export const MODULES: Readonly<Record<string, ModuleDef>> = {
   [membagiAdil.slug]: membagiAdil,
+  [membacaPecahan.slug]: membacaPecahan,
   [membandingkan.slug]: membandingkan,
 };
 

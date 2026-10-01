@@ -32,7 +32,12 @@ describe('registered modules', () => {
     expect(findModule('membandingkan')?.slug).toBe('membandingkan');
   });
 
-  it('points earlier modules to membandingkan as the next ready one', () => {
-    expect(nextReadyModule('membagi-adil')?.slug).toBe('membandingkan');
+  it('has membaca-pecahan ready', () => {
+    expect(findModule('membaca-pecahan')?.slug).toBe('membaca-pecahan');
+  });
+
+  it('points each module to the next ready one', () => {
+    expect(nextReadyModule('membagi-adil')?.slug).toBe('membaca-pecahan');
+    expect(nextReadyModule('membaca-pecahan')?.slug).toBe('membandingkan');
   });
 });
