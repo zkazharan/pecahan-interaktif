@@ -1,9 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
 import { tick } from 'svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { frac } from '../lib/fraction';
 import Bar from './Bar.svelte';
-import type { BarRow, Stacking } from './bar';
+import { BAR, rowY, type BarRow, type Stacking } from './bar';
 
 const ROWS: BarRow[] = [
   { id: 'a', value: frac(1, 3), color: 'var(--frac-1)' },
@@ -77,5 +77,62 @@ describe('Bar', () => {
     await tick();
     expect([...container.querySelectorAll('.piece')].at(-1)).toHaveAttribute('data-piece', 'a');
     expect(document.activeElement).toBe(container.querySelector('[data-piece="a"]'));
+  });
+
+  describe('programmatic stacking animation', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    function reducedMotion(matches: boolean) {
+      vi.stubGlobal('matchMedia', () => ({ matches }));
+    }
+
+    it('animates a piece from home to the stacked spot', async () => {
+      reducedMotion(false);
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      const { rerender, container } = render(Bar, { props: { rows: ROWS, stacking: null } });
+      expect(animate).not.toHaveBeenCalled();
+      await rerender({ stacking: { pieceOf: 'a', onto: 'b' } });
+      await tick();
+      const calls = animate.mock.calls.filter((_, i) => animate.mock.contexts[i] === container.querySelector('[data-piece-pos="a"]'));
+      expect(calls).toHaveLength(1);
+      expect(calls[0][0]).toEqual([
+        { transform: `translate(${BAR.x0}px, ${rowY(0)}px)` },
+        { transform: `translate(${BAR.x0 + 8}px, ${rowY(1) - 18}px)` },
+      ]);
+      expect(calls[0][1]).toMatchObject({ duration: 250 });
+    });
+
+    it('does not animate after a keyboard drop', async () => {
+      reducedMotion(false);
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      const { rerender } = render(Bar, {
+        props: {
+          rows: ROWS,
+          stacking: null,
+          draggable: true,
+          onstack: (stacking: Stacking) => {
+            void rerender({ stacking });
+          },
+        },
+      });
+      const piece = screen.getByRole('button', { name: 'Potongan sepertiga' });
+      await fireEvent.keyDown(piece, { key: ' ' });
+      await fireEvent.keyDown(piece, { key: ' ' });
+      await tick();
+      await tick();
+      expect(animate).not.toHaveBeenCalled();
+    });
+
+    it('does not animate under reduced motion', async () => {
+      reducedMotion(true);
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      const { rerender } = render(Bar, { props: { rows: ROWS, stacking: null } });
+      await rerender({ stacking: { pieceOf: 'a', onto: 'b' } });
+      await tick();
+      expect(animate).not.toHaveBeenCalled();
+    });
   });
 });

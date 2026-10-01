@@ -3,6 +3,7 @@
   import { draggable, dropTarget } from '../lib/drag/actions';
   import { announce } from '../lib/drag/announce';
   import { DragController } from '../lib/drag/controller';
+  import { prefersReducedMotion } from '../lib/motion';
   import { spokenFraction } from '../lib/spoken';
   import { BAR, hitBox, normalizeStacking, pieceWidth, piecePosition, rowY, viewHeight, type BarRow, type Stacking } from './bar';
 
@@ -17,7 +18,8 @@
   let { rows, stacking, draggable: canDrag = false, note = '', onstack }: Props = $props();
 
   const PIECE = 'piece-';
-  let instant = $state(false);
+  let instant = false;
+  const lastPositions = new Map<string, { x: number; y: number }>();
   let svgWidth = $state(0);
   let root: HTMLElement | undefined = $state();
 
@@ -28,6 +30,7 @@
       const hadFocus = document.activeElement?.closest('[data-piece]')?.getAttribute('data-piece') === pieceId;
       instant = true;
       onstack?.(normalizeStacking({ pieceOf: pieceId, onto: targetId }));
+      tick().then(() => (instant = false));
       if (hadFocus) {
         tick().then(() => {
           const el = root?.querySelector<SVGElement>(`[data-piece="${pieceId}"]`);
@@ -38,15 +41,20 @@
   });
 
   $effect(() => {
-    if (!instant) return;
-    let second = 0;
-    const first = requestAnimationFrame(() => {
-      second = requestAnimationFrame(() => (instant = false));
-    });
-    return () => {
-      cancelAnimationFrame(first);
-      cancelAnimationFrame(second);
-    };
+    const skip = instant || prefersReducedMotion();
+    for (const row of rows) {
+      const next = piecePosition(rows, row.id, stacking);
+      const previous = lastPositions.get(row.id);
+      lastPositions.set(row.id, next);
+      if (skip || !previous || (previous.x === next.x && previous.y === next.y)) continue;
+      root?.querySelector(`[data-piece-pos="${row.id}"]`)?.animate(
+        [
+          { transform: `translate(${previous.x}px, ${previous.y}px)` },
+          { transform: `translate(${next.x}px, ${next.y}px)` },
+        ],
+        { duration: 250, easing: 'cubic-bezier(0.2, 0.8, 0.2, 1)' },
+      );
+    }
   });
 
   function accepts(rowId: string): (itemId: string) => boolean {
@@ -100,7 +108,7 @@
   {#each ordered as row (row.id)}
     {@const pos = piecePosition(rows, row.id, stacking)}
     {@const hit = hitBox(row.value, svgWidth)}
-    <g class="piece-pos" class:instant style:transform={`translate(${pos.x}px, ${pos.y}px)`}>
+    <g class="piece-pos" data-piece-pos={row.id} style:transform={`translate(${pos.x}px, ${pos.y}px)`}>
       <g
         class="piece"
         data-piece={row.id}
@@ -177,12 +185,6 @@
   .piece:global([data-dragging]) {
     cursor: grabbing;
     opacity: 0.92;
-  }
-  .piece-pos {
-    transition: transform 250ms cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .piece-pos.instant {
-    transition: none;
   }
   .label text {
     font: 700 36px var(--font-body);
