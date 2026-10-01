@@ -18,6 +18,10 @@
   const rows: BarRow[] = $derived(
     task.cards.map((card, i) => ({ id: card.id, value: card.value, color: COLORS[i % COLORS.length] })),
   );
+  const lineCards = $derived(task.cards.map((card, i) => ({ ...card, accent: COLORS[i] })));
+  const lineMarks = $derived(
+    lineCards.map((card, i) => ({ perUnit: card.value.d, color: COLORS[i], side: i === 0 ? ('above' as const) : ('below' as const) })),
+  );
   const locked = $derived(feedback === 'correct' || feedback === 'shown');
   const showAid = $derived(aidOpen || feedback === 'wrong' || feedback === 'shown');
   const solutionStacking: Stacking = $derived.by(() => {
@@ -44,7 +48,7 @@
   </p>
 
   {#if task.kind === 'line'}
-    <NumberLine max={1} perUnit={task.perUnit} cards={task.cards} placement={answer} onplace={onanswer} {locked} />
+    <NumberLine max={1} perUnit={task.perUnit} cards={lineCards} marks={lineMarks} placement={answer} onplace={onanswer} {locked} />
   {:else}
     <CardSlots cards={task.cards} slots={slotsFor(task)} placement={answer} onplace={onanswer} {locked} />
   {/if}

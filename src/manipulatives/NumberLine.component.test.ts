@@ -19,6 +19,41 @@ describe('NumberLine', () => {
     expect(container.querySelectorAll('[data-tick]')).toHaveLength(7);
   });
 
+  it('draws an extra tick set for each division above or below the axis', () => {
+    const marks = [
+      { perUnit: 3, color: 'var(--frac-1)', side: 'above' as const },
+      { perUnit: 4, color: 'var(--frac-2)', side: 'below' as const },
+    ];
+    const { container } = render(NumberLine, {
+      props: { max: 1, perUnit: 12, cards: [], placement: emptyPlacement(tickIds(1, 12)), onplace: vi.fn(), marks },
+    });
+    const above = container.querySelectorAll('line.mark[data-side="above"]');
+    const below = container.querySelectorAll('line.mark[data-side="below"]');
+    expect(above).toHaveLength(4);
+    expect(below).toHaveLength(5);
+    expect(above[0].getAttribute('style')).toContain('var(--frac-1)');
+    expect(below[0].getAttribute('style')).toContain('var(--frac-2)');
+    expect(container.querySelector('line.mark')?.closest('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelectorAll('[data-tick]')).toHaveLength(13);
+  });
+
+  it('draws no extra ticks without marks', () => {
+    const { container } = render(NumberLine, {
+      props: { max: 1, perUnit: 4, cards: [], placement: emptyPlacement(tickIds(1, 4)), onplace: vi.fn() },
+    });
+    expect(container.querySelectorAll('line.mark')).toHaveLength(0);
+  });
+
+  it('colours the top of a card with its accent', () => {
+    const cards: Card[] = [{ id: 'c0', value: frac(1, 4), accent: 'var(--frac-2)' }];
+    const { container } = render(NumberLine, {
+      props: { max: 1, perUnit: 4, cards, placement: emptyPlacement(tickIds(1, 4)), onplace: vi.fn() },
+    });
+    const card = container.querySelector('[data-card="c0"]')!;
+    expect(card).toHaveClass('accented');
+    expect(card.getAttribute('style')).toContain('var(--frac-2)');
+  });
+
   it('hides the empty pile when locked and shows it otherwise', () => {
     const props = { max: 1, perUnit: 4, cards: [CARDS[0]], placement: { ...emptyPlacement(tickIds(1, 4)), t1: 'c0' }, onplace: vi.fn() };
     const locked = render(NumberLine, { props: { ...props, locked: true } });

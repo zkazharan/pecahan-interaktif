@@ -76,6 +76,28 @@ describe('membandingkan TaskView', () => {
     expect(screen.getByRole('button', { name: 'bingung? buka pitanya ↓' })).toBeInTheDocument();
   });
 
+  it('marks each card with its own division in its own colour', () => {
+    const task: MembandingkanTask = {
+      kind: 'line',
+      perUnit: 12,
+      cards: [
+        { id: 'c0', value: frac(1, 3) },
+        { id: 'c1', value: frac(1, 4) },
+      ],
+    };
+    const { container } = render(TaskView, {
+      props: { task, answer: Object.fromEntries(Array.from({ length: 13 }, (_, k) => [`t${k}`, null])), onanswer: vi.fn(), feedback: 'none' },
+    });
+    const above = container.querySelectorAll('line.mark[data-side="above"]');
+    const below = container.querySelectorAll('line.mark[data-side="below"]');
+    expect(above).toHaveLength(4);
+    expect(below).toHaveLength(5);
+    expect(above[0].getAttribute('style')).toContain('var(--frac-1)');
+    expect(below[0].getAttribute('style')).toContain('var(--frac-2)');
+    expect(container.querySelector('[data-card="c0"]')!.getAttribute('style')).toContain('var(--frac-1)');
+    expect(container.querySelector('[data-card="c1"]')!.getAttribute('style')).toContain('var(--frac-2)');
+  });
+
   it('marks compare tasks for the e2e helper', () => {
     const { container } = render(TaskView, { props: { task: COMPARE, answer: { besar: null }, onanswer: vi.fn(), feedback: 'none' } });
     expect(container.querySelector('[data-task-kind="compare"]')).not.toBeNull();

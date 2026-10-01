@@ -100,7 +100,7 @@ export function checkTask(task: MembandingkanTask, answer: Placement): CheckResu
   if (task.kind === 'line') {
     const correct = task.cards.every((card) => answer[tickId(tickFor(card.value, task.perUnit))] === card.id);
     if (correct) return { correct, hint: '' };
-    return { correct, hint: `Bagi garis jadi ${task.perUnit} bagian kecil, lalu hitung langkah untuk setiap kartu.` };
+    return { correct, hint: 'Lihat tanda berwarna: setiap kartu punya garis pembaginya sendiri.' };
   }
   const expected = solution(task);
   const correct = slotsFor(task).every((slot) => answer[slot.id] === expected[slot.id]);

@@ -19,6 +19,8 @@
   class="card"
   class:small
   class:shape={face.kind === 'shape'}
+  class:accented={!!card.accent}
+  style:--accent={card.accent}
   data-card={card.id}
   data-value={formatFraction(card.value)}
   use:draggable={{ controller, id: card.id, label: cardLabel(card), disabled: locked }}
@@ -53,6 +55,9 @@
     width: 128px;
     height: 128px;
     padding: 6px;
+  }
+  .card.accented {
+    border-top: 10px solid var(--accent);
   }
   .card:global([aria-disabled='true']) {
     cursor: default;

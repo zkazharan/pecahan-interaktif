@@ -6,7 +6,7 @@ export type CardFace =
   | { kind: 'mixed' }
   | { kind: 'shape'; slices: number[]; shaded: boolean[]; description: string };
 
-export type Card = { id: string; value: Fraction; face?: CardFace };
+export type Card = { id: string; value: Fraction; face?: CardFace; accent?: string };
 export type Slot = { id: string; label: string };
 export type Placement = Readonly<Record<string, string | null>>;
 

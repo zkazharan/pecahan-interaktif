@@ -3,12 +3,14 @@ import { frac, type Fraction } from '../lib/fraction';
 export const LINE = {
   x0: 50,
   width: 900,
-  y: 40,
+  y: 52,
   viewWidth: 1000,
-  viewHeight: 120,
+  viewHeight: 148,
   tickHalf: 16,
   majorHalf: 28,
-  labelY: 100,
+  labelY: 142,
+  markGap: 2,
+  markLength: 24,
 } as const;
 
 const CROWDED = 0.22;

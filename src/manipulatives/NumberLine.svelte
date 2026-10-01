@@ -5,6 +5,8 @@
   import { PILE, pileCards, type Card, type Placement } from './cardSlots';
   import { LINE, staggerRows, tickIds, tickIndexOf, tickX } from './numberLine';
 
+  type Mark = { perUnit: number; color: string; side: 'above' | 'below' };
+
   type Props = {
     max: number;
     perUnit: number;
@@ -12,9 +14,10 @@
     placement: Placement;
     onplace: (placement: Placement) => void;
     locked?: boolean;
+    marks?: Mark[];
   };
 
-  let { max, perUnit, cards, placement, onplace, locked = false }: Props = $props();
+  let { max, perUnit, cards, placement, onplace, locked = false, marks = [] }: Props = $props();
 
   let root: HTMLElement | undefined = $state();
 
@@ -32,6 +35,14 @@
     }),
   );
   const rows = $derived(staggerRows(placed.map((p) => p.index), total));
+
+  const markSets = $derived(
+    marks.map((mark) => ({
+      ...mark,
+      xs: Array.from({ length: max * mark.perUnit + 1 }, (_, k) => tickX(k, max, mark.perUnit)),
+      y1: mark.side === 'above' ? LINE.y - LINE.majorHalf - LINE.markGap - LINE.markLength : LINE.y + LINE.majorHalf + LINE.markGap,
+    })),
+  );
 
   function left(k: number): string {
     return `${(tickX(k, max, perUnit) / LINE.viewWidth) * 100}%`;
@@ -61,6 +72,11 @@
         {#if major}
           <text class="unit" {x} y={LINE.labelY}>{k / perUnit}</text>
         {/if}
+      {/each}
+      {#each markSets as set, i (i)}
+        {#each set.xs as x (x)}
+          <line class="mark" data-side={set.side} x1={x} x2={x} y1={set.y1} y2={set.y1 + LINE.markLength} style:stroke={set.color} />
+        {/each}
       {/each}
     </svg>
     {#each ticks as id, k (id)}
@@ -101,7 +117,7 @@
   .pins {
     position: relative;
     height: calc(2 * var(--pin-card) + 40px);
-    margin-bottom: -4cqw;
+    margin-bottom: -5.2cqw;
   }
   .pin {
     position: absolute;
@@ -138,6 +154,10 @@
   }
   .tick.major {
     stroke-width: 5;
+  }
+  .mark {
+    stroke-width: 8;
+    stroke-linecap: round;
   }
   .unit {
     font: 700 34px var(--font-body);

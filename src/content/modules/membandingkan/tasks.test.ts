@@ -120,7 +120,7 @@ describe('checkTask', () => {
     const swapped = { ...emptyPlacement(tickIds(1, 12)), t3: 'c0', t4: 'c1' };
     expect(checkTask(task, swapped)).toEqual({
       correct: false,
-      hint: 'Bagi garis jadi 12 bagian kecil, lalu hitung langkah untuk setiap kartu.',
+      hint: 'Lihat tanda berwarna: setiap kartu punya garis pembaginya sendiri.',
     });
   });
 });
