@@ -1,9 +1,13 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import Plates from './Plates.svelte';
 import type { PlatesState } from './plates';
 
 describe('Plates', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('moves a tray piece onto the first plate with the keyboard', async () => {
     const onmove = vi.fn();
     render(Plates, { props: { capacity: 4, state: { plates: [0, 0], tray: 5 }, onmove } });
@@ -82,7 +86,6 @@ describe('Plates', () => {
     const view = render(Plates, { props: { capacity: 4, state: { plates: [0, 0], tray: 5 }, onmove: vi.fn() } });
     await view.rerender({ state: { plates: [4, 1], tray: 0 } });
     expect(animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('scale(0.6)'))).toHaveLength(5);
-    vi.restoreAllMocks();
   });
 
   it('does not pop a piece the learner dragged', async () => {
@@ -96,6 +99,5 @@ describe('Plates', () => {
     await fireEvent.keyDown(piece, { key: ' ' });
     await fireEvent.keyDown(piece, { key: ' ' });
     expect(animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('scale(0.6)'))).toHaveLength(0);
-    vi.restoreAllMocks();
   });
 });

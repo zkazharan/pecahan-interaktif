@@ -1,9 +1,14 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import Circle from './Circle.svelte';
 import { equalSlices } from './circle';
 
 describe('Circle', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
   it('draws one path per slice and names the whole', () => {
     const { container } = render(Circle, { props: { slices: equalSlices(5), label: 'Martabak dipotong 5' } });
     expect(screen.getByRole('group', { name: 'Martabak dipotong 5' })).toBeInTheDocument();
@@ -45,7 +50,6 @@ describe('Circle', () => {
     expect(animate).not.toHaveBeenCalled();
     await view.rerender({ slices: equalSlices(3) });
     expect(JSON.stringify(animate.mock.calls[0][0])).toContain('scale(0.94)');
-    vi.restoreAllMocks();
   });
 
   it('does not pulse under reduced motion', async () => {
@@ -54,7 +58,5 @@ describe('Circle', () => {
     const view = render(Circle, { props: { slices: equalSlices(1), label: 'Martabak' } });
     await view.rerender({ slices: equalSlices(3) });
     expect(animate).not.toHaveBeenCalled();
-    vi.restoreAllMocks();
-    vi.unstubAllGlobals();
   });
 });

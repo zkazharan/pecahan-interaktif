@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
-import { describe, expect, it, vi } from 'vitest';
+import { tick } from 'svelte';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { frac } from '../lib/fraction';
 import NumberLine from './NumberLine.svelte';
-import { emptyPlacement, type Card } from './cardSlots';
+import { emptyPlacement, type Card, type Placement } from './cardSlots';
 import { tickIds } from './numberLine';
 
 const CARDS: Card[] = [
@@ -11,6 +12,10 @@ const CARDS: Card[] = [
 ];
 
 describe('NumberLine', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('labels the whole numbers under the main ticks', () => {
     const { container } = render(NumberLine, {
       props: { max: 3, perUnit: 2, cards: [], placement: emptyPlacement(tickIds(3, 2)), onplace: vi.fn() },
@@ -107,17 +112,40 @@ describe('NumberLine', () => {
     expect(target('t2').style.width).toBe('22.5%');
   });
 
-  it('slides a card placed by the program but not one the learner dropped', async () => {
-    const animate = vi.spyOn(Element.prototype, 'animate');
-    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
-      const onLine = this.closest('.pin') !== null;
-      return { left: onLine ? 200 : 0, top: onLine ? 0 : 300, width: 64, height: 80, right: 0, bottom: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+  describe('card slide', () => {
+    function stubRects(): void {
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+        const onLine = this.closest('.pin') !== null;
+        return { left: onLine ? 200 : 0, top: onLine ? 0 : 300, width: 64, height: 80, right: 0, bottom: 0, x: 0, y: 0, toJSON: () => ({}) } as DOMRect;
+      });
+    }
+
+    const slides = (animate: { mock: { calls: unknown[][] } }) =>
+      animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('translate')).length;
+
+    it('slides a card placed by the program', async () => {
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      stubRects();
+      const empty = emptyPlacement(tickIds(1, 4));
+      const view = render(NumberLine, { props: { max: 1, perUnit: 4, cards: CARDS, placement: empty, onplace: vi.fn() } });
+      await view.rerender({ placement: { ...empty, t1: 'c0' } });
+      expect(slides(animate)).toBe(1);
     });
-    const empty = emptyPlacement(tickIds(1, 4));
-    const view = render(NumberLine, { props: { max: 1, perUnit: 4, cards: CARDS, placement: empty, onplace: vi.fn() } });
-    await view.rerender({ placement: { ...empty, t1: 'c0' } });
-    const slides = () => animate.mock.calls.filter(([frames]) => JSON.stringify(frames).includes('translate')).length;
-    expect(slides()).toBe(1);
-    vi.restoreAllMocks();
+
+    it('does not slide a card the learner dropped', async () => {
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      stubRects();
+      let rerenderWith: (placement: Placement) => Promise<void> = async () => {};
+      const view = render(NumberLine, {
+        props: { max: 1, perUnit: 4, cards: CARDS, placement: emptyPlacement(tickIds(1, 4)), onplace: (p: Placement) => rerenderWith(p) },
+      });
+      rerenderWith = (placement) => view.rerender({ placement });
+      const card = screen.getByRole('button', { name: 'Kartu seperempat' });
+      await fireEvent.keyDown(card, { key: ' ' });
+      await fireEvent.keyDown(card, { key: ' ' });
+      await tick();
+      expect(document.querySelectorAll('.pin [data-card]')).toHaveLength(1);
+      expect(slides(animate)).toBe(0);
+    });
   });
 });
