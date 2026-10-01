@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import { frac } from '../lib/fraction';
 import { createRng } from '../lib/random';
-import { PILE, emptyPlacement, pileCards, placeCard, slotOf } from './cardSlots';
+import { PILE, cardLabel, emptyPlacement, pileCards, placeCard, slotOf, type Card } from './cardSlots';
 
 const SLOTS = ['s1', 's2', 's3'];
 const CARDS = ['c0', 'c1', 'c2'];
@@ -61,5 +62,20 @@ describe('slotOf', () => {
     const p = placeCard(emptyPlacement(SLOTS), 'c2', 's2');
     expect(slotOf(p, 'c2')).toBe('s2');
     expect(slotOf(p, 'c0')).toBeNull();
+  });
+});
+
+describe('cardLabel', () => {
+  it('names fraction, mixed and shape cards', () => {
+    const plain: Card = { id: 'a', value: frac(2, 5) };
+    const mixed: Card = { id: 'b', value: frac(7, 4), face: { kind: 'mixed' } };
+    const shape: Card = {
+      id: 'c',
+      value: frac(1, 4),
+      face: { kind: 'shape', slices: [0.25, 0.25, 0.25, 0.25], shaded: [true, false, false, false], description: 'martabak dipotong 4 sama besar, 1 diarsir' },
+    };
+    expect(cardLabel(plain)).toBe('Kartu dua perlima');
+    expect(cardLabel(mixed)).toBe('Kartu satu tiga perempat');
+    expect(cardLabel(shape)).toBe('Kartu martabak dipotong 4 sama besar, 1 diarsir');
   });
 });

@@ -27,6 +27,18 @@ describe('CardSlots', () => {
     expect(onplace).toHaveBeenCalledWith({ s1: 'c2', s2: null, s3: null });
   });
 
+  it('renders mixed and shape faces with their own names', () => {
+    const cards: Card[] = [
+      { id: 'm', value: frac(5, 4), face: { kind: 'mixed' } },
+      { id: 's', value: frac(1, 3), face: { kind: 'shape', slices: [1 / 3, 1 / 3, 1 / 3], shaded: [true, false, false], description: 'martabak dipotong 3 sama besar, 1 diarsir' } },
+    ];
+    const { container } = render(CardSlots, { props: { cards, slots: [{ id: 'pilihan', label: 'Pilihanmu' }], placement: { pilihan: null }, onplace: vi.fn() } });
+    expect(screen.getByRole('button', { name: 'Kartu satu seperempat' })).toBeInTheDocument();
+    const shape = screen.getByRole('button', { name: 'Kartu martabak dipotong 3 sama besar, 1 diarsir' });
+    expect(shape.querySelectorAll('[data-slice]')).toHaveLength(3);
+    expect(container.querySelector('[data-card="m"]')).toHaveAttribute('data-value', '5/4');
+  });
+
   it('renders placed cards inside their slot', () => {
     render(CardSlots, { props: { cards: CARDS, slots: SLOTS, placement: { s1: 'c2', s2: null, s3: null }, onplace: vi.fn() } });
     const slot = screen.getByTestId('slot-s1');

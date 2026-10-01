@@ -1,12 +1,10 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import FractionText from '../components/FractionText.svelte';
-  import { draggable, dropTarget } from '../lib/drag/actions';
+  import { dropTarget } from '../lib/drag/actions';
   import { announce } from '../lib/drag/announce';
   import { DragController } from '../lib/drag/controller';
-  import { formatFraction } from '../lib/fraction';
   import { prefersReducedMotion } from '../lib/motion';
-  import { spokenFraction } from '../lib/spoken';
+  import DragCard from './DragCard.svelte';
   import { PILE, pileCards, placeCard, type Card, type Placement, type Slot } from './cardSlots';
 
   type Props = {
@@ -69,14 +67,7 @@
 </script>
 
 {#snippet cardView(card: Card)}
-  <div
-    class="card"
-    data-card={card.id}
-    data-value={formatFraction(card.value)}
-    use:draggable={{ controller, id: card.id, label: `Kartu ${spokenFraction(card.value)}`, disabled: locked }}
-  >
-    <FractionText value={card.value} size="lg" />
-  </div>
+  <DragCard {card} {controller} {locked} />
 {/snippet}
 
 <div class="card-slots" bind:this={root}>
@@ -142,34 +133,7 @@
     border: 2px dashed var(--grid);
     border-radius: var(--radius);
   }
-  .card {
-    width: 80px;
-    height: 96px;
-    display: grid;
-    place-items: center;
-    border: var(--line) solid var(--ink);
-    border-radius: var(--radius);
-    background: #fff;
-    box-shadow: 4px 4px 0 var(--ink);
-    cursor: grab;
-    user-select: none;
-  }
-  .card:global([aria-disabled='true']) {
-    cursor: default;
-    box-shadow: none;
-  }
-  .card:global([data-dragging]) {
-    cursor: grabbing;
-    box-shadow: 8px 10px 0 rgba(27, 42, 68, 0.35);
-    rotate: 4deg;
-    z-index: 10;
-    position: relative;
-  }
   @media (min-width: 1600px) {
-    .card {
-      width: 112px;
-      height: 132px;
-    }
     .slot {
       min-height: 170px;
     }
