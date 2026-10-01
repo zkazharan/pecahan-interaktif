@@ -1,8 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { dragTo, readCards, solveCurrentTask, valueOf } from './helpers';
 
-test('teacher stacks 1/3 on 1/4 in Peraga', async ({ page }, testInfo) => {
-  test.fixme(testInfo.project.name === 'hp', 'sticky controls strip covers the bar on 390x844');
+test('teacher stacks 1/3 on 1/4 in Peraga', async ({ page }) => {
   await page.goto('./');
   await page.getByRole('link', { name: /Membandingkan pecahan/ }).click();
   await expect(page.getByRole('heading', { name: '3 · Membandingkan pecahan' })).toBeVisible();

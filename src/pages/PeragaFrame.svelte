@@ -50,8 +50,6 @@
     min-height: 0;
   }
   .strip {
-    position: sticky;
-    bottom: 0;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -71,5 +69,11 @@
     align-items: center;
     gap: 1em;
     margin-left: auto;
+  }
+  @media (min-width: 700px) and (min-height: 600px) {
+    .strip {
+      position: sticky;
+      bottom: 0;
+    }
   }
 </style>
