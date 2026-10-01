@@ -40,13 +40,21 @@ function sortTask(rng: Rng, fair: boolean): SortTask {
   return { kind: 'sort', fair, card: shapeCard('c0', fair ? equalSlices(count) : unequalSlices(rng, count), 0, fair) };
 }
 
+function distractorCut(rng: Rng, target: number): number[] {
+  for (let attempt = 0; attempt < 1000; attempt++) {
+    const slices = unequalSlices(rng, target);
+    if (Math.abs(slices[0] - 1 / target) >= 0.3 / target) return slices;
+  }
+  throw new Error('could not generate a distinct unequal cut');
+}
+
 function pickTask(rng: Rng): PickTask {
   const target = rng.int(3, 8);
   const other = target + (rng.int(0, 1) === 0 ? -1 : 1);
   const shuffled = rng.shuffle([
     shapeCard('right', equalSlices(target), 1, true),
     shapeCard('count', equalSlices(other), 1, true),
-    shapeCard('unequal', unequalSlices(rng, target), 1, false),
+    shapeCard('unequal', distractorCut(rng, target), 1, false),
   ]);
   const correctId = `c${shuffled.findIndex((card) => card.id === 'right')}`;
   return { kind: 'pick', target, correctId, cards: shuffled.map((card, i) => ({ ...card, id: `c${i}` })) };

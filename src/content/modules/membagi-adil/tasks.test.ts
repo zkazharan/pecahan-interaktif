@@ -63,6 +63,22 @@ describe('generateTasks', () => {
     expect(problems).toEqual([]);
   });
 
+  it('makes the unequal pick card shade a slice clearly different from one target-th', () => {
+    const problems: string[] = [];
+    for (const seed of SEEDS) {
+      const pick = generateTasks(createRng(seed))[4];
+      if (pick.kind !== 'pick') continue;
+      const unequal = pick.cards.find((card) => card.face?.kind === 'shape' && !isEqualCut(card.face.slices));
+      if (!unequal || unequal.face?.kind !== 'shape') {
+        problems.push(`${seed}: no unequal card`);
+        continue;
+      }
+      const shaded = unequal.face.slices[0];
+      if (Math.abs(shaded - 1 / pick.target) < 0.3 / pick.target) problems.push(`${seed}: ${shaded} vs ${1 / pick.target}`);
+    }
+    expect(problems).toEqual([]);
+  });
+
   it('is deterministic for a seed', () => {
     expect(generateTasks(createRng(42))).toEqual(generateTasks(createRng(42)));
   });
