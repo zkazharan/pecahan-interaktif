@@ -84,11 +84,14 @@
     gap: 1em;
   }
   .line-area {
+    --pin-card: 80px;
     position: relative;
+    container-type: inline-size;
   }
   .pins {
     position: relative;
-    height: 200px;
+    height: calc(2 * var(--pin-card) + 40px);
+    margin-bottom: -4cqw;
   }
   .pin {
     position: absolute;
@@ -104,7 +107,10 @@
     background: var(--ink);
   }
   .pin.high::after {
-    height: 104px;
+    height: calc(var(--pin-card) + 24px);
+  }
+  .pin:has(:global([data-dragging])) {
+    z-index: 20;
   }
   .axis-svg {
     display: block;
@@ -138,6 +144,11 @@
   .tick-target:global([data-drop-hover]) {
     outline: none;
     background: rgba(29, 78, 216, 0.14);
+  }
+  @media (min-width: 1600px) {
+    .line-area {
+      --pin-card: 108px;
+    }
   }
   .pile {
     min-height: 110px;
