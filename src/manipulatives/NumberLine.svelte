@@ -1,10 +1,8 @@
 <script lang="ts">
-  import { tick } from 'svelte';
   import { dropTarget } from '../lib/drag/actions';
-  import { announce } from '../lib/drag/announce';
-  import { DragController } from '../lib/drag/controller';
   import DragCard from './DragCard.svelte';
-  import { PILE, pileCards, placeCard, type Card, type Placement } from './cardSlots';
+  import { createCardDrop } from './cardDrop';
+  import { PILE, pileCards, type Card, type Placement } from './cardSlots';
   import { LINE, staggerRows, tickIds, tickIndexOf, tickX } from './numberLine';
 
   type Props = {
@@ -20,19 +18,7 @@
 
   let root: HTMLElement | undefined = $state();
 
-  const controller = new DragController({
-    announce,
-    onDrop: ({ itemId, targetId }) => {
-      const hadFocus = document.activeElement?.closest('[data-card]')?.getAttribute('data-card') === itemId;
-      onplace(placeCard(placement, itemId, targetId));
-      if (hadFocus) {
-        tick().then(() => {
-          const el = root?.querySelector<HTMLElement>(`[data-card="${itemId}"]`);
-          if (el && document.activeElement !== el) el.focus();
-        });
-      }
-    },
-  });
+  const controller = createCardDrop({ getPlacement: () => placement, onplace: (next) => onplace(next), getRoot: () => root });
 
   const ticks = $derived(tickIds(max, perUnit));
   const total = $derived(max * perUnit);

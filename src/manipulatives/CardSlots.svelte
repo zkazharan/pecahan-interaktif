@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { tick } from 'svelte';
   import { dropTarget } from '../lib/drag/actions';
-  import { announce } from '../lib/drag/announce';
-  import { DragController } from '../lib/drag/controller';
   import { prefersReducedMotion } from '../lib/motion';
   import DragCard from './DragCard.svelte';
-  import { PILE, pileCards, placeCard, type Card, type Placement, type Slot } from './cardSlots';
+  import { createCardDrop } from './cardDrop';
+  import { PILE, pileCards, type Card, type Placement, type Slot } from './cardSlots';
 
   type Props = {
     cards: Card[];
@@ -20,19 +18,7 @@
   let root: HTMLElement | undefined = $state();
   const before = new Map<string, DOMRect>();
 
-  const controller = new DragController({
-    announce,
-    onDrop: ({ itemId, targetId }) => {
-      const hadFocus = document.activeElement?.closest('[data-card]')?.getAttribute('data-card') === itemId;
-      onplace(placeCard(placement, itemId, targetId));
-      if (hadFocus) {
-        tick().then(() => {
-          const el = root?.querySelector<HTMLElement>(`[data-card="${itemId}"]`);
-          if (el && document.activeElement !== el) el.focus();
-        });
-      }
-    },
-  });
+  const controller = createCardDrop({ getPlacement: () => placement, onplace: (next) => onplace(next), getRoot: () => root });
 
   $effect.pre(() => {
     void placement;
