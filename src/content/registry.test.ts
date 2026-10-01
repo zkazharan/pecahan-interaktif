@@ -40,9 +40,15 @@ describe('registered modules', () => {
     expect(findModule('pecahan-campuran')?.slug).toBe('pecahan-campuran');
   });
 
+  it('has senilai ready', () => {
+    expect(findModule('senilai')?.slug).toBe('senilai');
+    expect(nextReadyModule('membandingkan')?.slug).toBe('senilai');
+  });
+
   it('points each module to the next ready one', () => {
     expect(nextReadyModule('membagi-adil')?.slug).toBe('membaca-pecahan');
     expect(nextReadyModule('membaca-pecahan')?.slug).toBe('membandingkan');
-    expect(nextReadyModule('membandingkan')?.slug).toBe('pecahan-campuran');
+    expect(nextReadyModule('membandingkan')?.slug).toBe('senilai');
+    expect(nextReadyModule('senilai')?.slug).toBe('pecahan-campuran');
   });
 });
