@@ -1,0 +1,135 @@
+<script lang="ts">
+  import FractionText from '../components/FractionText.svelte';
+  import { draggable, dropTarget } from '../lib/drag/actions';
+  import { announce } from '../lib/drag/announce';
+  import { DragController } from '../lib/drag/controller';
+  import { formatFraction } from '../lib/fraction';
+  import { spokenFraction } from '../lib/spoken';
+  import { PILE, pileCards, placeCard, type Card, type Placement, type Slot } from './cardSlots';
+
+  type Props = {
+    cards: Card[];
+    slots: Slot[];
+    placement: Placement;
+    onplace: (placement: Placement) => void;
+    locked?: boolean;
+  };
+
+  let { cards, slots, placement, onplace, locked = false }: Props = $props();
+
+  const controller = new DragController({
+    announce,
+    onDrop: ({ itemId, targetId }) => onplace(placeCard(placement, itemId, targetId)),
+  });
+
+  const byId = $derived(new Map(cards.map((card) => [card.id, card])));
+  const pile = $derived(pileCards(cards.map((card) => card.id), placement));
+</script>
+
+{#snippet cardView(card: Card)}
+  <div
+    class="card"
+    data-card={card.id}
+    data-value={formatFraction(card.value)}
+    use:draggable={{ controller, id: card.id, label: `Kartu ${spokenFraction(card.value)}`, disabled: locked }}
+  >
+    <FractionText value={card.value} size="lg" />
+  </div>
+{/snippet}
+
+<div class="card-slots">
+  <ol class="slots">
+    {#each slots as slot (slot.id)}
+      {@const cardId = placement[slot.id]}
+      {@const card = cardId ? byId.get(cardId) : undefined}
+      <li class="slot" data-testid={`slot-${slot.id}`} use:dropTarget={{ controller, id: slot.id, label: slot.label }}>
+        <span class="slot-label">{slot.label}</span>
+        {#if card}
+          {@render cardView(card)}
+        {/if}
+      </li>
+    {/each}
+  </ol>
+  <div class="pile" data-testid="pile" use:dropTarget={{ controller, id: PILE, label: 'tumpukan kartu' }}>
+    {#each pile as id (id)}
+      {@const card = byId.get(id)}
+      {#if card}
+        {@render cardView(card)}
+      {/if}
+    {/each}
+  </div>
+</div>
+
+<style>
+  .card-slots {
+    display: grid;
+    gap: 1em;
+  }
+  .slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6em;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .slot {
+    flex: 1 1 96px;
+    min-height: 128px;
+    display: grid;
+    grid-template-rows: auto 1fr;
+    justify-items: center;
+    align-items: center;
+    padding: 0.3em;
+    border: 3px dashed var(--ink-soft);
+    border-radius: var(--radius);
+    background: rgba(255, 255, 255, 0.55);
+  }
+  .slot-label {
+    font-size: 0.75em;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+  .pile {
+    min-height: 120px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8em;
+    align-items: center;
+    padding: 0.5em;
+    border: 2px dashed var(--grid);
+    border-radius: var(--radius);
+  }
+  .card {
+    width: 80px;
+    height: 96px;
+    display: grid;
+    place-items: center;
+    border: var(--line) solid var(--ink);
+    border-radius: var(--radius);
+    background: #fff;
+    box-shadow: 4px 4px 0 var(--ink);
+    cursor: grab;
+    user-select: none;
+  }
+  .card:global([aria-disabled='true']) {
+    cursor: default;
+    box-shadow: none;
+  }
+  .card:global([data-dragging]) {
+    cursor: grabbing;
+    box-shadow: 8px 10px 0 rgba(27, 42, 68, 0.35);
+    rotate: 4deg;
+    z-index: 10;
+    position: relative;
+  }
+  @media (min-width: 1600px) {
+    .card {
+      width: 112px;
+      height: 132px;
+    }
+    .slot {
+      min-height: 170px;
+    }
+  }
+</style>
