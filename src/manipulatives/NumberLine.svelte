@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { tick } from 'svelte';
   import { dropTarget } from '../lib/drag/actions';
   import DragCard from './DragCard.svelte';
   import { createCardDrop } from './cardDrop';
+  import { useCardFlip } from './cardFlip.svelte';
   import { PILE, pileCards, type Card, type Placement } from './cardSlots';
-  import { measure, playFlip } from './flip';
   import { LINE, staggerRows, tickIds, tickIndexOf, tickX } from './numberLine';
 
   type Mark = { perUnit: number; color: string; side: 'above' | 'below' };
@@ -23,28 +22,13 @@
 
   let root: HTMLElement | undefined = $state();
 
-  let userDrop = false;
-  let before = new Map<string, DOMRect>();
+  const flip = useCardFlip(() => root, () => placement);
 
   const controller = createCardDrop({
     getPlacement: () => placement,
     onplace: (next) => onplace(next),
     getRoot: () => root,
-    onUserDrop: () => {
-      userDrop = true;
-      tick().then(() => (userDrop = false));
-    },
-  });
-
-  $effect.pre(() => {
-    void placement;
-    before = userDrop ? new Map() : measure(root, 'data-card');
-  });
-
-  $effect(() => {
-    void placement;
-    playFlip(root, 'data-card', before);
-    before = new Map();
+    onUserDrop: flip.markUserDrop,
   });
 
   const ticks = $derived(tickIds(max, perUnit));
