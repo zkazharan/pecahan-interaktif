@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { tick } from 'svelte';
   import { draggable, dropTarget } from '../lib/drag/actions';
   import { announce } from '../lib/drag/announce';
   import { DragController } from '../lib/drag/controller';
   import { spokenFraction } from '../lib/spoken';
-  import { BAR, normalizeStacking, pieceWidth, piecePosition, rowY, viewHeight, type BarRow, type Stacking } from './bar';
+  import { BAR, hitBox, normalizeStacking, pieceWidth, piecePosition, rowY, viewHeight, type BarRow, type Stacking } from './bar';
 
   type Props = {
     rows: BarRow[];
@@ -17,12 +18,22 @@
 
   const PIECE = 'piece-';
   let instant = $state(false);
+  let svgWidth = $state(0);
+  let root: HTMLElement | undefined = $state();
 
   const controller = new DragController({
     announce,
     onDrop: ({ itemId, targetId }) => {
+      const pieceId = itemId.slice(PIECE.length);
+      const hadFocus = document.activeElement?.closest('[data-piece]')?.getAttribute('data-piece') === pieceId;
       instant = true;
-      onstack?.(normalizeStacking({ pieceOf: itemId.slice(PIECE.length), onto: targetId }));
+      onstack?.(normalizeStacking({ pieceOf: pieceId, onto: targetId }));
+      if (hadFocus) {
+        tick().then(() => {
+          const el = root?.querySelector<SVGElement>(`[data-piece="${pieceId}"]`);
+          if (el && document.activeElement !== el) el.focus();
+        });
+      }
     },
   });
 
@@ -42,10 +53,16 @@
     return (itemId) => itemId !== PIECE + rowId || stacking?.pieceOf === rowId;
   }
 
+  const ordered = $derived(
+    stacking
+      ? [...rows.filter((row) => row.id !== stacking.pieceOf), ...rows.filter((row) => row.id === stacking.pieceOf)]
+      : rows,
+  );
   const stackedRow = $derived(stacking ? rows.find((row) => row.id === stacking.pieceOf) : undefined);
   const notePosition = $derived(stacking && stackedRow ? piecePosition(rows, stackedRow.id, stacking) : null);
 </script>
 
+<div class="bar-wrap" bind:this={root} bind:clientWidth={svgWidth}>
 <svg
   class="bar"
   class:interactive={canDrag}
@@ -80,14 +97,17 @@
     </g>
   {/each}
 
-  {#each rows as row (row.id)}
+  {#each ordered as row (row.id)}
     {@const pos = piecePosition(rows, row.id, stacking)}
+    {@const hit = hitBox(row.value, svgWidth)}
     <g class="piece-pos" class:instant style:transform={`translate(${pos.x}px, ${pos.y}px)`}>
       <g
         class="piece"
+        data-piece={row.id}
         class:grab={canDrag}
         use:draggable={{ controller, id: PIECE + row.id, label: `Potongan ${spokenFraction(row.value)}`, disabled: !canDrag }}
       >
+        <rect class="hit" x={hit.x} y={hit.y} width={hit.width} height={hit.height} />
         <rect width={pieceWidth(row.value)} height={BAR.rowHeight} style:fill={row.color} />
         {#each Array.from({ length: row.value.n - 1 }, (_, k) => k + 1) as k (k)}
           {@const x = (BAR.width * k) / row.value.d}
@@ -101,6 +121,7 @@
     <text class="note" x={notePosition.x + pieceWidth(stackedRow.value) + 18} y={notePosition.y + 4}>{note}</text>
   {/if}
 </svg>
+</div>
 
 <style>
   .bar {
@@ -134,14 +155,22 @@
     stroke-width: 3;
     stroke-dasharray: 6 8;
   }
-  .piece rect {
+  .piece rect:not(.hit) {
     stroke: var(--ink);
     stroke-width: 4;
+  }
+  .hit {
+    fill: transparent;
+    stroke: none;
+    pointer-events: all;
+  }
+  .bar:has(:global([data-dragging])) .piece:not(:global([data-dragging])) rect:not(.hit) {
+    opacity: 0.5;
   }
   .piece.grab {
     cursor: grab;
   }
-  .piece:focus-visible rect {
+  .piece:focus-visible rect:not(.hit) {
     stroke: var(--blue);
     stroke-width: 7;
   }

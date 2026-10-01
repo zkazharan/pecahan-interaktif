@@ -1,8 +1,9 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { describe, expect, it, vi } from 'vitest';
 import { frac } from '../lib/fraction';
 import Bar from './Bar.svelte';
-import type { BarRow } from './bar';
+import type { BarRow, Stacking } from './bar';
 
 const ROWS: BarRow[] = [
   { id: 'a', value: frac(1, 3), color: 'var(--frac-1)' },
@@ -47,5 +48,34 @@ describe('Bar', () => {
   it('keeps pieces out of the tab order when not draggable', () => {
     render(Bar, { props: { rows: ROWS, stacking: null } });
     expect(screen.getByRole('button', { name: 'Potongan sepertiga' })).toHaveAttribute('tabindex', '-1');
+  });
+
+  it('paints the stacked piece last so it stays on top', () => {
+    const a = render(Bar, { props: { rows: ROWS, stacking: { pieceOf: 'a', onto: 'b' } } });
+    expect([...a.container.querySelectorAll('.piece')].at(-1)).toHaveAttribute('data-piece', 'a');
+    a.unmount();
+    const b = render(Bar, { props: { rows: ROWS, stacking: { pieceOf: 'b', onto: 'a' } } });
+    expect([...b.container.querySelectorAll('.piece')].at(-1)).toHaveAttribute('data-piece', 'b');
+  });
+
+  it('keeps focus on the piece after a keyboard drop reorders it', async () => {
+    const { rerender, container } = render(Bar, {
+      props: {
+        rows: ROWS,
+        stacking: null,
+        draggable: true,
+        onstack: (stacking: Stacking) => {
+          void rerender({ stacking });
+        },
+      },
+    });
+    const piece = screen.getByRole('button', { name: 'Potongan sepertiga' });
+    piece.focus();
+    await fireEvent.keyDown(piece, { key: ' ' });
+    await fireEvent.keyDown(piece, { key: ' ' });
+    await tick();
+    await tick();
+    expect([...container.querySelectorAll('.piece')].at(-1)).toHaveAttribute('data-piece', 'a');
+    expect(document.activeElement).toBe(container.querySelector('[data-piece="a"]'));
   });
 });

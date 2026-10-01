@@ -45,3 +45,13 @@ export function stackNote(rows: readonly BarRow[], stacking: Stacking): string {
   const relation = compare(piece.value, onto.value);
   return relation > 0 ? 'lebih panjang!' : relation < 0 ? 'lebih pendek!' : 'pas sama!';
 }
+
+const MIN_TOUCH = 48;
+
+export function hitBox(value: Fraction, svgWidth: number): { x: number; y: number; width: number; height: number } {
+  const minUnits = svgWidth > 0 ? MIN_TOUCH / (svgWidth / BAR.viewWidth) : 0;
+  const base = pieceWidth(value);
+  const width = Math.max(base, minUnits);
+  const height = Math.max(BAR.rowHeight, minUnits);
+  return { x: (base - width) / 2, y: (BAR.rowHeight - height) / 2, width, height };
+}

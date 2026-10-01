@@ -18,3 +18,11 @@ if (typeof Element.prototype.animate !== 'function') {
     return animation as unknown as Animation;
   };
 }
+
+if (typeof globalThis.ResizeObserver !== 'function') {
+  globalThis.ResizeObserver = class ResizeObserver {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}

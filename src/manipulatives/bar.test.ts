@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { frac } from '../lib/fraction';
-import { BAR, normalizeStacking, pieceWidth, piecePosition, rowY, stackNote, viewHeight, type BarRow } from './bar';
+import { BAR, hitBox, normalizeStacking, pieceWidth, piecePosition, rowY, stackNote, viewHeight, type BarRow } from './bar';
 
 const ROWS: BarRow[] = [
   { id: 'a', value: frac(1, 3), color: 'var(--frac-1)' },
@@ -47,5 +47,24 @@ describe('stackNote', () => {
     const equal: BarRow[] = [ROWS[0], { id: 'c', value: frac(2, 6), color: 'x' }];
     expect(stackNote(equal, { pieceOf: 'a', onto: 'c' })).toBe('pas sama!');
     expect(stackNote(ROWS, null)).toBe('');
+  });
+});
+
+describe('hitBox', () => {
+  it('equals the piece box when there is no scaling', () => {
+    expect(hitBox(frac(1, 4), 1000)).toEqual({ x: 0, y: 0, width: 205, height: BAR.rowHeight });
+    expect(hitBox(frac(1, 4), 0)).toEqual({ x: 0, y: 0, width: 205, height: BAR.rowHeight });
+  });
+
+  it('grows to a 48 px touch target on a small screen', () => {
+    const box = hitBox(frac(1, 12), 360);
+    expect(box.width).toBeGreaterThanOrEqual(48 / 0.36 - 0.001);
+    expect(box.height).toBeGreaterThanOrEqual(48 / 0.36 - 0.001);
+    expect(box.x + box.width / 2).toBeCloseTo(pieceWidth(frac(1, 12)) / 2);
+    expect(box.y + box.height / 2).toBeCloseTo(BAR.rowHeight / 2);
+  });
+
+  it('keeps pieces that are already large enough', () => {
+    expect(hitBox(frac(1, 2), 360)).toMatchObject({ x: 0, width: 410 });
   });
 });
