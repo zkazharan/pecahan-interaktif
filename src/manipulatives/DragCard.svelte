@@ -18,12 +18,13 @@
 <div
   class="card"
   class:small
+  class:shape={face.kind === 'shape'}
   data-card={card.id}
   data-value={formatFraction(card.value)}
   use:draggable={{ controller, id: card.id, label: cardLabel(card), disabled: locked }}
 >
   {#if face.kind === 'shape'}
-    <Circle slices={face.slices} shaded={face.shaded} label={face.description} size="sm" decorative />
+    <Circle slices={face.slices} shaded={face.shaded} label={face.description} size="fill" decorative />
   {:else if face.kind === 'mixed'}
     <MixedText whole={mixed.whole} rest={mixed.rest} size={small ? 'md' : 'lg'} />
   {:else}
@@ -48,6 +49,11 @@
     width: 64px;
     height: 80px;
   }
+  .card.shape {
+    width: 128px;
+    height: 128px;
+    padding: 6px;
+  }
   .card:global([aria-disabled='true']) {
     cursor: default;
     box-shadow: none;
@@ -67,6 +73,11 @@
     .card.small {
       width: 88px;
       height: 108px;
+    }
+    .card.shape {
+      width: 200px;
+      height: 200px;
+      padding: 8px;
     }
   }
 </style>

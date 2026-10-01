@@ -11,6 +11,11 @@ describe('Circle', () => {
     expect(screen.queryAllByRole('button')).toHaveLength(0);
   });
 
+  it('can follow the width of its container', () => {
+    const { container } = render(Circle, { props: { slices: equalSlices(3), label: 'Martabak', size: 'fill' } });
+    expect(container.querySelector('svg')).toHaveClass('fill');
+  });
+
   it('turns slices into toggle buttons when shading is allowed', async () => {
     const onshade = vi.fn();
     render(Circle, { props: { slices: equalSlices(4), shaded: [true, false, false, false], onshade, label: 'Martabak' } });

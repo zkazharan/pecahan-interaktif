@@ -37,6 +37,9 @@ describe('CardSlots', () => {
     const shape = screen.getByRole('button', { name: 'Kartu martabak dipotong 3 sama besar, 1 diarsir' });
     expect(shape.querySelectorAll('[data-slice]')).toHaveLength(3);
     expect(container.querySelector('[data-card="m"]')).toHaveAttribute('data-value', '5/4');
+    expect(container.querySelector('[data-card="s"]')).toHaveClass('shape');
+    expect(container.querySelector('[data-card="s"] svg')).toHaveClass('fill');
+    expect(container.querySelector('[data-card="m"]')).not.toHaveClass('shape');
   });
 
   it('renders placed cards inside their slot', () => {

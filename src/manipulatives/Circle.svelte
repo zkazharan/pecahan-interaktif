@@ -6,7 +6,7 @@
     shaded?: readonly boolean[];
     onshade?: (index: number) => void;
     label: string;
-    size?: 'sm' | 'md' | 'lg';
+    size?: 'fill' | 'md' | 'lg';
     color?: string;
     decorative?: boolean;
   };
@@ -56,8 +56,8 @@
     height: auto;
     overflow: visible;
   }
-  .sm {
-    width: 64px;
+  .fill {
+    width: 100%;
   }
   .md {
     width: min(100%, 240px);
