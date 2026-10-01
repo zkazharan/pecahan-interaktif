@@ -3,6 +3,7 @@ import type { Rng } from '../../../lib/random';
 import { emptyPlacement, type Card, type Placement, type Slot } from '../../../manipulatives/cardSlots';
 import { tickFor, tickId, tickIds } from '../../../manipulatives/numberLine';
 import type { CheckResult } from '../../types';
+import { range } from '../common';
 
 export type CompareTask = { kind: 'compare'; cards: Card[] };
 export type OrderTask = { kind: 'order'; cards: Card[] };
@@ -21,10 +22,6 @@ export const CONCLUSION = 'Kalau pembilangnya sama, penyebut yang lebih besar be
 
 export function slotsFor(task: CompareTask | OrderTask): Slot[] {
   return task.kind === 'compare' ? COMPARE_SLOTS : ORDER_SLOTS;
-}
-
-function range(from: number, to: number): number[] {
-  return Array.from({ length: to - from + 1 }, (_, i) => from + i);
 }
 
 function unitFractions(rng: Rng, count: number): Fraction[] {
