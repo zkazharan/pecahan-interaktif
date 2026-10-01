@@ -43,7 +43,12 @@
   const firstTry = $derived(firstTryCount(flow.outcomes));
   const complete = $derived(latihan.isComplete(task, answer));
   const settled = $derived(flow.status === 'correct' || flow.status === 'shown');
-  const unchanged = $derived(flow.status === 'wrong' && JSON.stringify(answer) === checked);
+  const unchanged = $derived(flow.status === 'wrong' && gradedKey(answer) === checked);
+  const diff = $derived(unchanged);
+
+  function gradedKey(value: A): string {
+    return JSON.stringify(latihan.graded ? latihan.graded(value) : value);
+  }
 
   $effect(() => {
     if (settled) primary?.focus();
@@ -52,7 +57,7 @@
   function check(): void {
     const result = latihan.check(task, answer);
     flow = submitAnswer(flow, result.correct);
-    checked = JSON.stringify(answer);
+    checked = gradedKey(answer);
     hint = result.correct ? '' : result.hint;
   }
 
@@ -103,7 +108,7 @@
     <p class="counter">Soal {flow.index + 1} dari {TASKS_PER_LATIHAN}</p>
     {#key `${round}-${flow.index}`}
       <div class="task">
-        <latihan.TaskView {task} {answer} onanswer={(value: A) => (answer = value)} feedback={feedbackFor(flow.status)} />
+        <latihan.TaskView {task} {answer} onanswer={(value: A) => (answer = value)} feedback={feedbackFor(flow.status)} {diff} />
       </div>
     {/key}
     <p class="feedback" aria-live="polite">

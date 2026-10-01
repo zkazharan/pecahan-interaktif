@@ -13,6 +13,7 @@ export const jumlahPenyebutSama: ModuleDef<SameParams, SamaTask, SamaAnswer> = {
     isComplete,
     solution,
     check: checkTask,
+    graded: (answer) => answer.placement,
     conclusion: CONCLUSION,
     TaskView,
   },

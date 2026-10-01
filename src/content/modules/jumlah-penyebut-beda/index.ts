@@ -13,6 +13,7 @@ export const jumlahPenyebutBeda: ModuleDef<DiffParams, BedaTask, BedaAnswer> = {
     isComplete,
     solution,
     check: checkTask,
+    graded: (answer) => answer.placement,
     conclusion: CONCLUSION,
     TaskView,
   },

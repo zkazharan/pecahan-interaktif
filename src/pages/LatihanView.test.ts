@@ -76,6 +76,35 @@ describe('LatihanView', () => {
     expect(screen.getByRole('button', { name: 'Cek jawaban' })).toBeEnabled();
   });
 
+  it('shows the difference only while the wrong answer is unchanged', async () => {
+    const { user } = setup();
+    expect(screen.getByText(/Beda tidak/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    expect(screen.getByText(/Beda ya/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah lain' }));
+    expect(screen.getByText(/Beda tidak/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    expect(screen.getByText(/Beda ya/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan caranya' }));
+    expect(screen.getByText(/Beda tidak/)).toBeInTheDocument();
+  });
+
+  it('compares only the graded part of the answer', async () => {
+    const graded: LatihanDef<{ target: number }, number | null> = {
+      ...fake,
+      graded: (answer) => (answer === null ? null : ((answer % 100) + 100) % 100),
+    };
+    const store = createProgressStore(null);
+    render(LatihanView, { props: { latihan: graded as LatihanDef<unknown, unknown>, slug: 'contoh', number: 3, seed: 1, store } });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    await user.click(screen.getByRole('button', { name: 'Ubah bantuan' }));
+    expect(screen.getByRole('button', { name: 'Cek jawaban' })).toBeDisabled();
+    expect(screen.getByText(/Beda ya/)).toBeInTheDocument();
+  });
+
   it('moves focus to the next button once the answer is correct', async () => {
     const { user } = setup();
     await user.click(screen.getByRole('button', { name: 'Jawab benar' }));

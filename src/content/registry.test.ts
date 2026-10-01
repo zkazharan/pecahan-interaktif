@@ -62,3 +62,17 @@ describe('registered modules', () => {
     expect(nextReadyModule('senilai')?.slug).toBe('pecahan-campuran');
   });
 });
+
+describe('graded answers', () => {
+  it('grades only the placed card in jumlah-penyebut-sama', () => {
+    const graded = findModule('jumlah-penyebut-sama')!.latihan.graded!;
+    const placement = { pilihan: 'c1' };
+    expect(graded({ plates: { plates: [3], tray: 0 }, placement })).toEqual(graded({ plates: { plates: [1], tray: 2 }, placement }));
+  });
+
+  it('grades only the placed card in jumlah-penyebut-beda', () => {
+    const graded = findModule('jumlah-penyebut-beda')!.latihan.graded!;
+    const placement = { pilihan: 'c1' };
+    expect(graded({ cuts: [2, 3], placement })).toEqual(graded({ cuts: [4, 6], placement }));
+  });
+});

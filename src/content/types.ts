@@ -10,6 +10,7 @@ export type TaskViewProps<T, A> = {
   answer: A;
   onanswer: (answer: A) => void;
   feedback: Feedback;
+  diff?: boolean;
 };
 
 export type LatihanDef<T, A> = {
@@ -18,6 +19,7 @@ export type LatihanDef<T, A> = {
   isComplete: (task: T, answer: A) => boolean;
   solution: (task: T) => A;
   check: (task: T, answer: A) => CheckResult;
+  graded?: (answer: A) => unknown;
   conclusion: string;
   TaskView: Component<TaskViewProps<T, A>>;
 };
