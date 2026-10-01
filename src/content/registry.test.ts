@@ -36,8 +36,13 @@ describe('registered modules', () => {
     expect(findModule('membaca-pecahan')?.slug).toBe('membaca-pecahan');
   });
 
+  it('has pecahan-campuran ready', () => {
+    expect(findModule('pecahan-campuran')?.slug).toBe('pecahan-campuran');
+  });
+
   it('points each module to the next ready one', () => {
     expect(nextReadyModule('membagi-adil')?.slug).toBe('membaca-pecahan');
     expect(nextReadyModule('membaca-pecahan')?.slug).toBe('membandingkan');
+    expect(nextReadyModule('membandingkan')?.slug).toBe('pecahan-campuran');
   });
 });
