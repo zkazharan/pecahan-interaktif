@@ -67,6 +67,7 @@ describe('pointer drag', () => {
     controller.start('piece', { pointerId: P1, clientX: 10, clientY: 10 });
     controller.move({ pointerId: P1, clientX: 40, clientY: 50 });
     expect((item as HTMLElement).style.transform).toBe('translate(30px, 40px)');
+    controller.cancelItem('piece');
   });
 
   it('marks the hovered target and clears it after the drop', () => {
@@ -167,12 +168,14 @@ describe('keyboard drag', () => {
     expect(controller.keyDown('piece', 'a')).toBe(false);
     controller.keyDown('piece', ' ');
     expect(controller.keyDown('piece', 'a')).toBe(false);
+    controller.cancelItem('piece');
   });
 
   it('does not start a keyboard drag during a pointer drag', () => {
     const { controller } = setup();
     controller.start('piece', { pointerId: P1, clientX: 0, clientY: 0 });
     expect(controller.keyDown('piece', ' ')).toBe(false);
+    controller.cancelItem('piece');
   });
 });
 
@@ -187,6 +190,7 @@ describe('svg scale', () => {
     controller.start('r', { pointerId: P1, clientX: 0, clientY: 0 });
     controller.move({ pointerId: P1, clientX: 40, clientY: 20 });
     expect((rect as unknown as SVGElement).style.transform).toBe('translate(20px, 10px)');
+    controller.cancelItem('r');
   });
 });
 
@@ -246,6 +250,7 @@ describe('cancelItem', () => {
     controller.keyDown('piece', ' ');
     controller.cancelItem('other');
     expect(controller.isDragging()).toBe(true);
+    controller.cancelItem('piece');
   });
 
   it('does nothing when idle', () => {
@@ -288,5 +293,43 @@ describe('targeting', () => {
     controller.keyDown('piece', 'Escape');
     expect(a.hasAttribute('data-drop-hover')).toBe(false);
     expect(item.hasAttribute('data-dragging')).toBe(false);
+  });
+});
+
+describe('single drag across controllers', () => {
+  function pair() {
+    const a = setup();
+    const b = setup();
+    return { a, b };
+  }
+
+  it('blocks a second controller until the first drag ends', () => {
+    const { a, b } = pair();
+    expect(a.controller.start('piece', { pointerId: P1, clientX: 0, clientY: 0 })).toBe(true);
+    expect(b.controller.start('piece', { pointerId: P2, clientX: 0, clientY: 0 })).toBe(false);
+    expect(b.controller.keyDown('piece', ' ')).toBe(false);
+    expect(b.controller.isDragging()).toBe(false);
+    expect(b.item.hasAttribute('data-dragging')).toBe(false);
+    a.controller.end({ pointerId: P1, clientX: 250, clientY: 50 });
+    expect(b.controller.start('piece', { pointerId: P2, clientX: 0, clientY: 0 })).toBe(true);
+    b.controller.cancelItem('piece');
+  });
+
+  it('frees the lock when the first drag is cancelled', () => {
+    const { a, b } = pair();
+    a.controller.start('piece', { pointerId: P1, clientX: 0, clientY: 0 });
+    a.controller.cancelItem('piece');
+    expect(b.controller.start('piece', { pointerId: P2, clientX: 0, clientY: 0 })).toBe(true);
+    b.controller.cancelItem('piece');
+  });
+
+  it('blocks a keyboard pickup while another controller holds a keyboard drag', () => {
+    const { a, b } = pair();
+    expect(a.controller.keyDown('piece', ' ')).toBe(true);
+    expect(b.controller.keyDown('piece', ' ')).toBe(false);
+    expect(b.controller.isDragging()).toBe(false);
+    a.controller.keyDown('piece', 'Escape');
+    expect(b.controller.keyDown('piece', ' ')).toBe(true);
+    b.controller.cancelItem('piece');
   });
 });

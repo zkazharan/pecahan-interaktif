@@ -31,6 +31,8 @@ const PICK_KEYS = new Set([' ', 'Enter']);
 const NEXT_KEYS = new Set(['ArrowRight', 'ArrowDown']);
 const PREV_KEYS = new Set(['ArrowLeft', 'ArrowUp']);
 
+let owner: DragController | null = null;
+
 export class DragController {
   private readonly items = new Map<string, DragItem>();
   private readonly targets = new Map<string, DropTarget>();
@@ -67,7 +69,8 @@ export class DragController {
 
   start(itemId: string, point: Point): boolean {
     const item = this.items.get(itemId);
-    if (this.active || !item) return false;
+    if (this.active || !item || !this.canStart()) return false;
+    owner = this;
     this.active = {
       kind: 'pointer',
       itemId,
@@ -133,13 +136,14 @@ export class DragController {
 
   private pickUp(itemId: string, key: string): boolean {
     const item = this.items.get(itemId);
-    if (!PICK_KEYS.has(key) || !item) return false;
+    if (!PICK_KEYS.has(key) || !item || !this.canStart()) return false;
     const options = this.acceptingTargets(itemId);
     if (options.length === 0) {
       this.say(`Tidak ada tempat untuk ${item.label}.`);
       return true;
     }
     const drag: KeyboardDrag = { kind: 'keyboard', itemId, hoverId: null };
+    owner = this;
     this.active = drag;
     item.el.setAttribute('data-dragging', '');
     this.setHover(drag, options[0].id);
@@ -151,6 +155,7 @@ export class DragController {
     const item = this.items.get(drag.itemId);
     this.setHover(drag, null);
     this.active = null;
+    if (owner === this) owner = null;
     if (item) {
       item.el.removeAttribute('data-dragging');
       setOffset(item.el, 0, 0, targetId === null && drag.kind === 'pointer' && !this.reducedMotion());
@@ -159,6 +164,10 @@ export class DragController {
     const target = this.targets.get(targetId);
     this.options.onDrop({ itemId: drag.itemId, targetId });
     if (item && target) this.say(`${item.label} ditaruh di ${target.label}.`);
+  }
+
+  private canStart(): boolean {
+    return owner === null || owner === this;
   }
 
   private pointerDrag(point: Point): PointerDrag | null {
