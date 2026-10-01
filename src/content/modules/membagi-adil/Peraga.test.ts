@@ -17,6 +17,8 @@ describe('membagi-adil Peraga', () => {
     expect(screen.getByText(/mau dibagi untuk/)).toBeInTheDocument();
     expect(slices()).toBe(1);
     await user.click(screen.getByRole('button', { name: 'Lanjut →' }));
+    expect(screen.queryByText('tidak sama besar!')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
     expect(screen.getByText('tidak sama besar!')).toBeInTheDocument();
     expect(slices()).toBe(3);
     await user.click(screen.getByRole('button', { name: 'Lanjut →' }));
@@ -28,6 +30,15 @@ describe('membagi-adil Peraga', () => {
     expect(screen.getByText('sama besar, adil!')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Lanjut →' }));
     expect(screen.getByRole('img', { name: 'sepertiga' })).toBeInTheDocument();
+  });
+
+  it('hides the unfair note again after leaving step 1', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Lanjut →' }));
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    await user.click(screen.getByRole('button', { name: 'Lanjut →' }));
+    await user.click(screen.getByRole('button', { name: '← Sebelumnya' }));
+    expect(screen.queryByText('tidak sama besar!')).toBeNull();
   });
 
   it('reports a new number of children', async () => {

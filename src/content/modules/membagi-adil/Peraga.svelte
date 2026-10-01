@@ -17,6 +17,7 @@
 
   let step = $state(0);
   let cuts = $state(1);
+  let unfairShown = $state(false);
 
   const unfair = $derived(unequalSlices(createRng(params.n), params.n));
   const slices = $derived(step === 0 ? [1] : step === 1 ? unfair : equalSlices(step === 3 ? params.n : cuts));
@@ -36,12 +37,13 @@
 
   function goTo(next: number): void {
     step = next;
+    unfairShown = false;
     if (next < 2) cuts = 1;
     if (next === 3) cuts = params.n;
   }
 </script>
 
-<PeragaFrame {step} total={TOTAL_STEPS} onstep={goTo} onshow={step === 2 ? () => (cuts = params.n) : undefined}>
+<PeragaFrame {step} total={TOTAL_STEPS} onstep={goTo} onshow={step === 1 ? () => (unfairShown = true) : step === 2 ? () => (cuts = params.n) : undefined}>
   {#snippet caption()}
     {#if step === 0}
       Martabak ini mau dibagi untuk <span class="hl">{params.n} anak</span>.
@@ -57,7 +59,7 @@
     <div class="stage">
       <Circle {slices} {shaded} {label} size="lg" />
       <div class="side">
-        {#if step === 1}
+        {#if step === 1 && unfairShown}
           <HandNote>tidak sama besar!</HandNote>
         {/if}
         {#if step === 2}
