@@ -15,8 +15,23 @@
 <style>
   .step-nav {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     gap: 0.8em;
+  }
+  @media (max-width: 600px) {
+    .step-nav {
+      flex: 1 1 100%;
+    }
+    .step-nav .btn {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .dots {
+      order: 3;
+      flex-basis: 100%;
+      justify-content: center;
+    }
   }
   .dots {
     display: flex;
