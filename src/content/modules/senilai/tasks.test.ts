@@ -9,6 +9,7 @@ import {
   generateTasks,
   isComplete,
   solution,
+  wrongPairSlots,
   type SenilaiAnswer,
   type SenilaiTask,
 } from './tasks';
@@ -98,5 +99,23 @@ describe('isComplete', () => {
     expect(isComplete(pair, emptyAnswer(pair))).toBe(false);
     expect(isComplete(simple, emptyAnswer(simple))).toBe(false);
     for (const task of [recut, pair, simple]) expect(isComplete(task, solution(task))).toBe(true);
+  });
+});
+
+describe('wrongPairSlots', () => {
+  it('flags the two slots whose cards were swapped, and none when correct', () => {
+    for (const seed of SEEDS.slice(0, 50)) {
+      const task = generateTasks(createRng(seed))[1];
+      if (task.kind !== 'pair') throw new Error('expected pair');
+      expect(wrongPairSlots(task, task.solution)).toEqual([]);
+      const swapped = { ...task.solution, s0: task.solution.s1, s1: task.solution.s0 };
+      expect(wrongPairSlots(task, swapped)).toEqual(['s0', 's1']);
+    }
+  });
+
+  it('flags empty slots', () => {
+    const task = generateTasks(createRng(3))[1];
+    if (task.kind !== 'pair') throw new Error('expected pair');
+    expect(wrongPairSlots(task, { s0: null, s1: null, s2: null })).toEqual(['s0', 's1', 's2']);
   });
 });

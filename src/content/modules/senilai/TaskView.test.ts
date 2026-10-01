@@ -28,4 +28,42 @@ describe('senilai TaskView', () => {
     expect(container.querySelector('[data-task-kind="simplify"]')).toHaveAttribute('data-correct', simple.kind === 'simplify' ? simple.correctId : '');
     expect(container.querySelectorAll('[data-card]')).toHaveLength(3);
   });
+
+  it('draws the target bar under the learner bar on a wrong re-cut with diff', () => {
+    const answer = { cuts: 2, placement: {} };
+    const plain = render(TaskView, { props: { task: recut, answer, onanswer: vi.fn(), feedback: 'wrong' } });
+    expect(plain.container.querySelector('[data-testid="diff"]')).toBeNull();
+    expect(plain.container.querySelector('[data-diff]')).toBeNull();
+    plain.unmount();
+    const { container } = render(TaskView, { props: { task: recut, answer, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-task-kind="recut"]')).toHaveAttribute('data-diff', 'true');
+    expect(container.querySelector('[data-testid="diff"] [data-row="target"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="diff"] [data-row="base"]')).not.toBeNull();
+  });
+
+  it('flags the wrong pair slots and compares the first one with diff', () => {
+    if (pair.kind !== 'pair') throw new Error('expected pair');
+    const swapped = { ...pair.solution, s0: pair.solution.s1, s1: pair.solution.s0 };
+    const plain = render(TaskView, { props: { task: pair, answer: { cuts: 1, placement: swapped }, onanswer: vi.fn(), feedback: 'wrong' } });
+    expect(plain.container.querySelectorAll('[data-flagged]')).toHaveLength(0);
+    expect(plain.container.querySelector('[data-testid="diff"]')).toBeNull();
+    plain.unmount();
+    const { container } = render(TaskView, {
+      props: { task: pair, answer: { cuts: 1, placement: swapped }, onanswer: vi.fn(), feedback: 'wrong', diff: true },
+    });
+    expect(container.querySelectorAll('[data-flagged]')).toHaveLength(2);
+    expect(container.querySelector('[data-testid="diff"] [data-testid="diff-bars"]')).not.toBeNull();
+  });
+
+  it('compares the chosen card with the target on simplify with diff', () => {
+    if (simple.kind !== 'simplify') throw new Error('expected simplify');
+    const wrongId = simple.cards.find((card) => card.id !== simple.correctId)!.id;
+    const answer = { cuts: 1, placement: { pilihan: wrongId } };
+    const plain = render(TaskView, { props: { task: simple, answer, onanswer: vi.fn(), feedback: 'wrong' } });
+    expect(plain.container.querySelector('[data-testid="diff"]')).toBeNull();
+    plain.unmount();
+    const { container } = render(TaskView, { props: { task: simple, answer, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-task-kind="simplify"]')).toHaveAttribute('data-diff', 'true');
+    expect(container.querySelector('[data-testid="diff"] [data-testid="diff-bars"]')).not.toBeNull();
+  });
 });

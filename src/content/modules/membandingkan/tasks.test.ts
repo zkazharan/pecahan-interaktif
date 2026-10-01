@@ -8,9 +8,11 @@ import {
   emptyAnswer,
   generateTasks,
   isComplete,
+  orderDiff,
   slotsFor,
   solution,
   type MembandingkanTask,
+  type OrderTask,
 } from './tasks';
 
 const SEEDS = Array.from({ length: 1000 }, (_, i) => i * 7919 + 1);
@@ -143,5 +145,26 @@ describe('isComplete and emptyAnswer', () => {
     expect(Object.keys(empty)).toEqual(tickIds(1, task.perUnit));
     expect(isComplete(task, { ...empty, t0: 'c0' })).toBe(false);
     expect(isComplete(task, solution(task))).toBe(true);
+  });
+});
+
+describe('orderDiff', () => {
+  const task: OrderTask = {
+    kind: 'order',
+    cards: [
+      { id: 'c0', value: frac(1, 2) },
+      { id: 'c1', value: frac(1, 3) },
+      { id: 'c2', value: frac(1, 4) },
+    ],
+  };
+
+  it('returns the first neighbouring pair that is out of order', () => {
+    expect(orderDiff(task, { s1: 'c0', s2: 'c2', s3: 'c1' })).toEqual({ left: 'c0', right: 'c2' });
+    expect(orderDiff(task, { s1: 'c2', s2: 'c0', s3: 'c1' })).toEqual({ left: 'c0', right: 'c1' });
+  });
+
+  it('returns null for a correct order or an unfinished one', () => {
+    expect(orderDiff(task, { s1: 'c2', s2: 'c1', s3: 'c0' })).toBeNull();
+    expect(orderDiff(task, { s1: 'c0', s2: null, s3: null })).toBeNull();
   });
 });

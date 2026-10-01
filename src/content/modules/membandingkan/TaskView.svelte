@@ -6,9 +6,9 @@
   import { compare } from '../../../lib/fraction';
   import type { Placement } from '../../../manipulatives/cardSlots';
   import type { TaskViewProps } from '../../types';
-  import { slotsFor, type MembandingkanTask } from './tasks';
+  import { orderDiff, slotsFor, type MembandingkanTask } from './tasks';
 
-  let { task, answer, onanswer, feedback }: TaskViewProps<MembandingkanTask, Placement> = $props();
+  let { task, answer, onanswer, feedback, diff = false }: TaskViewProps<MembandingkanTask, Placement> = $props();
 
   const COLORS = ['var(--frac-1)', 'var(--frac-2)', 'var(--frac-3)'];
 
@@ -29,14 +29,30 @@
     const [small, large] = [...task.cards].sort((x, y) => compare(x.value, y.value));
     return { pieceOf: large.id, onto: small.id };
   });
+  const diffPair = $derived.by(() => (diff && task.kind === 'order' ? orderDiff(task, answer) : null));
+  const diffStacking: Stacking = $derived.by(() => {
+    if (!diff) return null;
+    if (task.kind === 'compare') {
+      const chosen = task.cards.find((card) => card.id === answer.besar);
+      const other = task.cards.find((card) => card.id !== answer.besar);
+      return chosen && other ? { pieceOf: chosen.id, onto: other.id } : null;
+    }
+    return diffPair ? { pieceOf: diffPair.left, onto: diffPair.right } : null;
+  });
+  const flagged = $derived(diffPair ? ['s1', 's2', 's3'].filter((slot) => answer[slot] === diffPair.left || answer[slot] === diffPair.right) : []);
   const shownStacking: Stacking = $derived.by(() => {
     if (feedback === 'shown') return solutionStacking ?? stacking ?? null;
-    if (stacking !== undefined) return stacking;
-    return feedback === 'wrong' && task.kind === 'compare' ? { pieceOf: task.cards[0].id, onto: task.cards[1].id } : null;
+    if (diff) return diffStacking;
+    return stacking ?? null;
   });
 </script>
 
-<div class="task" data-task-kind={task.kind} data-per-unit={task.kind === 'line' ? String(task.perUnit) : undefined}>
+<div
+  class="task"
+  data-task-kind={task.kind}
+  data-per-unit={task.kind === 'line' ? String(task.perUnit) : undefined}
+  data-diff={diff ? 'true' : undefined}
+>
   <p class="question">
     {#if task.kind === 'compare'}
       Mana yang <span class="hl">lebih besar</span>? Taruh kartunya di kotak.
@@ -48,14 +64,14 @@
   </p>
 
   {#if task.kind === 'line'}
-    <NumberLine max={1} perUnit={task.perUnit} cards={lineCards} marks={lineMarks} placement={answer} onplace={onanswer} {locked} />
+    <NumberLine max={1} perUnit={task.perUnit} cards={lineCards} marks={lineMarks} placement={answer} onplace={onanswer} {locked} showValues={diff} />
   {:else}
-    <CardSlots cards={task.cards} slots={slotsFor(task)} placement={answer} onplace={onanswer} {locked} />
+    <CardSlots cards={task.cards} slots={slotsFor(task)} placement={answer} onplace={onanswer} {locked} {flagged} />
   {/if}
 
   {#if showAid}
     <div class="aid">
-      <Bar {rows} stacking={shownStacking} draggable={!locked} note={stackNote(rows, shownStacking)} onstack={(next) => (stacking = next)} />
+      <Bar {rows} stacking={shownStacking} draggable={!locked && !diff} note={stackNote(rows, shownStacking)} onstack={(next) => (stacking = next)} />
     </div>
   {:else}
     <button type="button" class="aid-toggle" onclick={() => (aidOpen = true)}>bingung? buka pitanya ↓</button>

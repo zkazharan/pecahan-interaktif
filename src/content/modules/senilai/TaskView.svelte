@@ -3,13 +3,14 @@
   import FractionText from '../../../components/FractionText.svelte';
   import Bar from '../../../manipulatives/Bar.svelte';
   import CardSlots from '../../../manipulatives/CardSlots.svelte';
+  import DiffBars from '../../../manipulatives/DiffBars.svelte';
   import { maxCut } from '../../../manipulatives/bar';
   import type { Placement } from '../../../manipulatives/cardSlots';
   import type { TaskViewProps } from '../../types';
   import { PICK_SLOTS } from '../common';
-  import type { SenilaiAnswer, SenilaiTask } from './tasks';
+  import { wrongPairSlots, type SenilaiAnswer, type SenilaiTask } from './tasks';
 
-  let { task, answer, onanswer, feedback }: TaskViewProps<SenilaiTask, SenilaiAnswer> = $props();
+  let { task, answer, onanswer, feedback, diff = false }: TaskViewProps<SenilaiTask, SenilaiAnswer> = $props();
 
   const locked = $derived(feedback === 'correct' || feedback === 'shown');
   const hooks = $derived(
@@ -20,12 +21,24 @@
         : { 'data-correct': task.correctId },
   );
 
+  const cardValue = (id: string | null | undefined) => (task.kind === 'recut' ? undefined : task.cards.find((card) => card.id === id)?.value);
+  const wrongSlots = $derived(task.kind === 'pair' && diff ? wrongPairSlots(task, answer.placement) : []);
+  const pairDiff = $derived.by(() => {
+    if (task.kind !== 'pair') return null;
+    for (const slot of task.slots) {
+      const mine = cardValue(answer.placement[slot.id]);
+      if (wrongSlots.includes(slot.id) && slot.value && mine) return { goal: slot.value, mine };
+    }
+    return null;
+  });
+  const pickedValue = $derived(task.kind === 'simplify' ? cardValue(answer.placement.pilihan) : undefined);
+
   function place(placement: Placement): void {
     onanswer({ ...answer, placement });
   }
 </script>
 
-<div class="task" data-task-kind={task.kind} {...hooks}>
+<div class="task" data-task-kind={task.kind} {...hooks} data-diff={diff ? 'true' : undefined}>
   {#if task.kind === 'recut'}
     <p class="question">Potong ulang pita <FractionText value={task.base} /> sampai menjadi <FractionText value={task.target} />.</p>
     <Bar rows={[{ id: 'base', value: task.base, color: 'var(--frac-1)', cut: answer.cuts }]} stacking={null} />
@@ -37,12 +50,33 @@
       disabled={locked}
       onchange={(cuts) => onanswer({ ...answer, cuts })}
     />
+    {#if diff}
+      <div class="diff" data-testid="diff">
+        <Bar
+          rows={[
+            { id: 'base', value: task.base, color: 'var(--frac-1)', cut: answer.cuts },
+            { id: 'target', value: task.target, color: 'var(--frac-2)' },
+          ]}
+          stacking={null}
+        />
+      </div>
+    {/if}
   {:else if task.kind === 'pair'}
     <p class="question">Pasangkan setiap kartu dengan pecahan yang <span class="hl">senilai</span>.</p>
-    <CardSlots cards={task.cards} slots={task.slots} placement={answer.placement} onplace={place} {locked} />
+    <CardSlots cards={task.cards} slots={task.slots} placement={answer.placement} onplace={place} {locked} flagged={wrongSlots} />
+    {#if pairDiff}
+      <div class="diff" data-testid="diff">
+        <DiffBars goal={pairDiff.goal} mine={pairDiff.mine} />
+      </div>
+    {/if}
   {:else}
     <p class="question">Bentuk <span class="hl">paling sederhana</span> dari <FractionText value={task.value} /> adalah ...</p>
     <CardSlots cards={task.cards} slots={PICK_SLOTS} placement={answer.placement} onplace={place} {locked} />
+    {#if diff && pickedValue}
+      <div class="diff" data-testid="diff">
+        <DiffBars goal={task.value} mine={pickedValue} />
+      </div>
+    {/if}
   {/if}
 </div>
 
@@ -55,5 +89,10 @@
     margin: 0;
     font-size: 1.25em;
     font-weight: 600;
+  }
+  .diff {
+    margin-top: 0.8em;
+    padding: 0.6em 0.8em;
+    border-left: 4px dashed var(--red);
   }
 </style>

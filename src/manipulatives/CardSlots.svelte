@@ -92,7 +92,8 @@
   }
   .slot.flagged {
     border-color: var(--red);
-    border-style: dashed;
+    border-width: 5px;
+    background: rgba(198, 40, 40, 0.12);
   }
   .slot-label {
     position: relative;

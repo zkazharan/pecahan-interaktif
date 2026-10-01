@@ -1,5 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/svelte';
-import { tick } from 'svelte';
+import { render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { frac } from '../../../lib/fraction';
@@ -23,10 +22,78 @@ describe('membandingkan TaskView', () => {
     expect(screen.getByRole('group', { name: 'Pita pecahan' })).toBeInTheDocument();
   });
 
-  it('opens and stacks the bars after a wrong answer', () => {
-    render(TaskView, { props: { task: COMPARE, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'wrong' } });
+  it('opens the bars after a wrong answer but only stacks them with diff', () => {
+    const { container } = render(TaskView, { props: { task: COMPARE, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'wrong' } });
     expect(screen.getByRole('group', { name: 'Pita pecahan' })).toBeInTheDocument();
+    expect(screen.queryByText('lebih pendek!')).toBeNull();
+    expect(container.querySelector('[data-testid="diff"]')).toBeNull();
+    expect(container.querySelector('[data-diff]')).toBeNull();
+  });
+
+  it('stacks the chosen card onto the other one with diff', () => {
+    const { container } = render(TaskView, { props: { task: COMPARE, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-task-kind="compare"]')).toHaveAttribute('data-diff', 'true');
+    expect(screen.getByText('lebih pendek!')).toBeInTheDocument();
+    expect(container.querySelector('[data-row="c1"] [data-ghost]')).not.toBeNull();
+    expect(container.querySelector('[data-row="c0"] [data-ghost]')).toBeNull();
+  });
+
+  it('freezes the stacking while the difference is on screen', () => {
+    render(TaskView, { props: { task: COMPARE, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(screen.getByRole('button', { name: 'Potongan seperempat' })).toHaveAttribute('aria-disabled', 'true');
+  });
+
+  it('flags the first out-of-order pair and stacks the left one onto the right one', () => {
+    const task: MembandingkanTask = {
+      kind: 'order',
+      cards: [
+        { id: 'c0', value: frac(1, 2) },
+        { id: 'c1', value: frac(1, 3) },
+        { id: 'c2', value: frac(1, 4) },
+      ],
+    };
+    const { container } = render(TaskView, {
+      props: { task, answer: { s1: 'c0', s2: 'c2', s3: 'c1' }, onanswer: vi.fn(), feedback: 'wrong', diff: true },
+    });
+    expect(container.querySelectorAll('[data-flagged]')).toHaveLength(2);
+    expect(container.querySelector('[data-testid="slot-s1"]')).toHaveAttribute('data-flagged');
+    expect(container.querySelector('[data-testid="slot-s2"]')).toHaveAttribute('data-flagged');
     expect(screen.getByText('lebih panjang!')).toBeInTheDocument();
+    expect(container.querySelector('[data-row="c0"] [data-ghost]')).not.toBeNull();
+  });
+
+  it('flags nothing on the order task without diff', () => {
+    const task: MembandingkanTask = {
+      kind: 'order',
+      cards: [
+        { id: 'c0', value: frac(1, 2) },
+        { id: 'c1', value: frac(1, 3) },
+        { id: 'c2', value: frac(1, 4) },
+      ],
+    };
+    const { container } = render(TaskView, {
+      props: { task, answer: { s1: 'c0', s2: 'c2', s3: 'c1' }, onanswer: vi.fn(), feedback: 'wrong' },
+    });
+    expect(container.querySelectorAll('[data-flagged]')).toHaveLength(0);
+    expect(container.querySelector('[data-diff]')).toBeNull();
+  });
+
+  it('prints the position values on the number line only with diff', () => {
+    const task: MembandingkanTask = {
+      kind: 'line',
+      perUnit: 12,
+      cards: [
+        { id: 'c0', value: frac(1, 3) },
+        { id: 'c1', value: frac(1, 4) },
+      ],
+    };
+    const answer = { ...Object.fromEntries(Array.from({ length: 13 }, (_, k) => [`t${k}`, null])), t6: 'c0', t2: 'c1' };
+    const plain = render(TaskView, { props: { task, answer, onanswer: vi.fn(), feedback: 'wrong' } });
+    expect(plain.container.querySelectorAll('[data-placed-value]')).toHaveLength(0);
+    plain.unmount();
+    const { container } = render(TaskView, { props: { task, answer, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
+    expect(container.querySelector('[data-task-kind="line"]')).toHaveAttribute('data-diff', 'true');
+    expect(container.querySelectorAll('[data-placed-value]').length).toBeGreaterThan(0);
   });
 
   it('keeps the bars open and stacks the larger piece when the solution is shown', () => {
@@ -40,16 +107,6 @@ describe('membandingkan TaskView', () => {
     render(TaskView, { props: { task, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'shown' } });
     expect(screen.getByRole('group', { name: 'Pita pecahan' })).toBeInTheDocument();
     expect(screen.getByText('lebih panjang!')).toBeInTheDocument();
-  });
-
-  it('lets the learner un-stack while the answer is wrong', async () => {
-    render(TaskView, { props: { task: COMPARE, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'wrong' } });
-    expect(screen.getByText('lebih panjang!')).toBeInTheDocument();
-    const piece = screen.getByRole('button', { name: 'Potongan sepertiga' });
-    await fireEvent.keyDown(piece, { key: ' ' });
-    await fireEvent.keyDown(piece, { key: ' ' });
-    await tick();
-    expect(screen.queryByText('lebih panjang!')).toBeNull();
   });
 
   it('locks the cards once the task is settled', () => {

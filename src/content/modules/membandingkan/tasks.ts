@@ -110,3 +110,14 @@ export function checkTask(task: MembandingkanTask, answer: Placement): CheckResu
         : 'Bandingkan dua-dua dulu. Buka pitanya kalau bingung.',
   };
 }
+
+export function orderDiff(task: OrderTask, answer: Placement): { left: string; right: string } | null {
+  const ids = ['s1', 's2', 's3'].map((slot) => answer[slot]);
+  const value = (id: string | null) => task.cards.find((card) => card.id === id)?.value;
+  for (let i = 0; i < ids.length - 1; i++) {
+    const a = value(ids[i]);
+    const b = value(ids[i + 1]);
+    if (a && b && compare(a, b) > 0) return { left: ids[i]!, right: ids[i + 1]! };
+  }
+  return null;
+}

@@ -100,3 +100,12 @@ export function checkTask(task: SenilaiTask, answer: SenilaiAnswer): CheckResult
   const correct = answer.placement.pilihan === task.correctId;
   return correct ? { correct, hint: '' } : { correct, hint: 'Bagi pembilang dan penyebut dengan angka yang sama.' };
 }
+
+export function wrongPairSlots(task: PairTask, answer: Placement): string[] {
+  return task.slots
+    .filter((slot) => {
+      const card = task.cards.find((c) => c.id === answer[slot.id]);
+      return !card || !slot.value || !equivalent(card.value, slot.value);
+    })
+    .map((slot) => slot.id);
+}
