@@ -173,8 +173,8 @@
     background: rgba(255, 255, 255, 0.55);
   }
   .tray-piece {
-    width: 72px;
-    height: 72px;
+    width: 56px;
+    height: 56px;
     overflow: visible;
     cursor: grab;
   }
@@ -184,6 +184,12 @@
   .tray-piece:global([data-dragging]),
   .handle:global([data-dragging]) .hit {
     cursor: grabbing;
+  }
+  @media (min-width: 600px) {
+    .tray-piece {
+      width: 72px;
+      height: 72px;
+    }
   }
   @media (min-width: 1600px) {
     .plate {
