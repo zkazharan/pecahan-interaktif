@@ -18,6 +18,7 @@ import {
   piecePosition,
   rowY,
   shownValue,
+  sideNotePlacement,
   stackNote,
   unitWidth,
   viewHeight,
@@ -311,5 +312,42 @@ describe('captioned rows', () => {
     const position = piecePosition(ROWS, 'a', { pieceOf: 'a', onto: 'b' });
     expect(notePlacement(position, 300, 'lebih panjang!', 22).anchor).toBe('start');
     expect(notePlacement(position, 300, 'lebih panjang!', 40).anchor).toBe('end');
+  });
+});
+
+describe('sideNotePlacement', () => {
+  const y = 200;
+
+  it('writes the note after whichever end is further right, centred on the row', () => {
+    const placed = sideNotePlacement(y, 300, 450, 'lebih pendek!');
+    expect(placed.anchor).toBe('start');
+    expect(placed.x).toBe(450 + 18);
+    expect(placed.y).toBeGreaterThan(y);
+    expect(placed.y).toBeLessThan(y + BAR.rowHeight);
+  });
+
+  it('keeps the note clear of the svg edge when it only fits right after the piece', () => {
+    const placed = sideNotePlacement(y, BAR.x0 + 240, BAR.x0 + 440, 'lebih pendek!', 34);
+    expect(placed.anchor).toBe('start');
+    expect(placed.x).toBe(BAR.x0 + 240 + 18);
+    expect(placed.inside).toBe(true);
+  });
+
+  it('right-aligns the note before the label when nothing else fits', () => {
+    const placed = sideNotePlacement(y, BAR.x0 + 780, BAR.x0 + 700, 'lebih panjang!', 40);
+    expect(placed.anchor).toBe('end');
+    expect(placed.x).toBe(BAR.labelX - 30);
+    expect(placed.inside).toBe(true);
+  });
+
+  it('needs no halo when the note sits past both ends', () => {
+    expect(sideNotePlacement(y, 300, 450, 'lebih pendek!').inside).toBe(false);
+  });
+});
+
+describe('sideNotePlacement with a wide label', () => {
+  it('stops before the given label edge', () => {
+    const placed = sideNotePlacement(200, BAR.x0 + 780, BAR.x0 + 700, 'lebih panjang!', 40, 840);
+    expect(placed.x).toBe(840);
   });
 });

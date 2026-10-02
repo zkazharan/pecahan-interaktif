@@ -21,6 +21,7 @@
     pieceWidth,
     piecePosition,
     rowY,
+    sideNotePlacement,
     shownValue,
     stackNote,
     unitWidth,
@@ -38,9 +39,10 @@
     draggable?: boolean;
     note?: string;
     onstack?: (stacking: Stacking) => void;
+    compare?: { row: string; against: string };
   };
 
-  let { rows, stacking, draggable: canDrag = false, note = '', onstack }: Props = $props();
+  let { rows, stacking, draggable: canDrag = false, note = '', onstack, compare }: Props = $props();
 
   const PIECE = 'piece-';
   let instant = false;
@@ -148,6 +150,24 @@
     const minX = ontoCaption ? captionEnd(ontoCaption, caption.fontSize) + 24 : 0;
     return notePlacement(piecePosition(rows, stackedRow.id, stacking), pieceWidth(stackedRow.value, units), note, noteSize.charWidth, minX);
   });
+  const compared = $derived.by(() => {
+    if (stacking || !compare) return null;
+    const rowIndex = rows.findIndex((row) => row.id === compare.row);
+    const againstIndex = rows.findIndex((row) => row.id === compare.against);
+    if (rowIndex < 0 || againstIndex < 0) return null;
+    const text = stackNote(rows, { pieceOf: compare.row, onto: compare.against });
+    const rowTop = rowY(rowIndex, captioned);
+    const againstTop = rowY(againstIndex, captioned);
+    const guideX = BAR.x0 + pieceWidth(rows[againstIndex].value, units);
+    const pieceEnd = BAR.x0 + pieceWidth(rows[rowIndex].value, units);
+    return {
+      text,
+      guideX,
+      y1: Math.min(rowTop, againstTop) - 6,
+      y2: Math.max(rowTop, againstTop) + BAR.rowHeight + 6,
+      placed: sideNotePlacement(rowTop, pieceEnd, guideX, text, noteSize.charWidth, BAR.labelX - label.half - 14),
+    };
+  });
 </script>
 
 <div class="bar-wrap" bind:this={root} bind:clientWidth={svgWidth} bind:clientHeight={svgHeight}>
@@ -218,6 +238,17 @@
     </g>
   {/each}
 
+  {#if compared}
+    <line class="compare-guide" data-compare-guide x1={compared.guideX} x2={compared.guideX} y1={compared.y1} y2={compared.y2} />
+    <text
+      class="note"
+      class:inside={compared.placed.inside}
+      x={compared.placed.x}
+      y={compared.placed.y}
+      text-anchor={compared.placed.anchor}
+      style:font-size={`${noteSize.fontSize}px`}>{compared.text}</text>
+  {/if}
+
   {#if placedNote}
     <text
       class="note"
@@ -273,6 +304,13 @@
   .piece rect:not(.hit) {
     stroke: var(--ink);
     stroke-width: 4;
+  }
+  .compare-guide {
+    stroke: var(--red);
+    stroke-width: 4;
+    stroke-dasharray: 10 8;
+    stroke-linecap: round;
+    pointer-events: none;
   }
   .hit {
     fill: transparent;

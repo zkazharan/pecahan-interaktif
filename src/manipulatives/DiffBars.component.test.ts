@@ -8,11 +8,28 @@ function labels(container: HTMLElement, rowId: string): string[] {
 }
 
 describe('DiffBars', () => {
-  it('stacks mine on the goal and says which is longer', () => {
+  it('keeps each piece in its own captioned row and says how mine compares', () => {
     const { container } = render(DiffBars, { props: { goal: frac(1, 2), mine: frac(2, 3) } });
+    expect(container.querySelector('[data-ghost]')).toBeNull();
+    const rowTop = (id: string) => Number(container.querySelector(`[data-row="${id}"] rect.whole`)!.getAttribute('y'));
+    const pieceTop = (id: string) => Number(/translate\([^,]+,\s*([-\d.]+)px\)/.exec((container.querySelector(`[data-piece-pos="${id}"]`) as SVGElement).style.transform)![1]);
+    expect(pieceTop('mine')).toBe(rowTop('mine'));
+    expect(pieceTop('goal')).toBe(rowTop('goal'));
     expect(container.querySelector('.note')?.textContent).toBe('lebih panjang!');
     expect(labels(container, 'goal')).toEqual(['1', '2']);
     expect(labels(container, 'mine')).toEqual(['2', '3']);
+  });
+
+  it('marks where the goal ends across both rows', () => {
+    const { container } = render(DiffBars, { props: { goal: frac(1, 2), mine: frac(1, 4) } });
+    const guide = container.querySelector('[data-compare-guide]')!;
+    const goalPiece = container.querySelector('[data-piece="goal"] rect:not(.hit)')!;
+    const goalRow = container.querySelector('[data-row="goal"] rect.whole')!;
+    const mineRow = container.querySelector('[data-row="mine"] rect.whole')!;
+    expect(Number(guide.getAttribute('x1'))).toBe(Number(goalRow.getAttribute('x')) + Number(goalPiece.getAttribute('width')));
+    expect(Number(guide.getAttribute('y1'))).toBeLessThanOrEqual(Number(goalRow.getAttribute('y')));
+    expect(Number(guide.getAttribute('y2'))).toBeGreaterThanOrEqual(Number(mineRow.getAttribute('y')) + Number(mineRow.getAttribute('height')));
+    expect(container.querySelector('.note')?.textContent).toBe('lebih pendek!');
   });
 
   it('hides the goal label when asked', () => {

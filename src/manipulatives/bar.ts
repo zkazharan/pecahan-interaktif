@@ -190,3 +190,19 @@ export function notePlacement(
   const y = position.y + BAR.rowHeight / 2 + (14 * charWidth) / NOTE_CHAR_WIDTH;
   return { x: position.x + pieceW - 14, y: Math.max(y, floor), anchor: 'end' };
 }
+
+export function sideNotePlacement(
+  rowTop: number,
+  pieceEnd: number,
+  guideX: number,
+  note: string,
+  charWidth = NOTE_CHAR_WIDTH,
+  limit = BAR.labelX - 30,
+): { x: number; y: number; anchor: 'start' | 'end'; inside: boolean } {
+  const y = rowTop + BAR.rowHeight / 2 + (14 * charWidth) / NOTE_CHAR_WIDTH;
+  const width = note.length * charWidth;
+  const pastBoth = Math.max(pieceEnd, guideX) + 18;
+  if (pastBoth + width <= limit) return { x: pastBoth, y, anchor: 'start', inside: false };
+  if (pieceEnd + 18 + width <= limit) return { x: pieceEnd + 18, y, anchor: 'start', inside: true };
+  return { x: limit, y, anchor: 'end', inside: true };
+}
