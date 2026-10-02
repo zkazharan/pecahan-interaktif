@@ -76,6 +76,11 @@ a {
   outline-offset: 3px;
 }
 
+svg:focus:not(:focus-visible),
+svg :focus:not(:focus-visible) {
+  outline: none;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

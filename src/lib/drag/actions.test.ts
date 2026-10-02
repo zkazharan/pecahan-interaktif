@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DragController } from './controller';
 import { draggable, dropTarget } from './actions';
 
@@ -101,6 +101,14 @@ describe('draggable action', () => {
     node.dispatchEvent(event);
     expect(event.defaultPrevented).toBe(true);
     expect(document.activeElement).toBe(node);
+    controller.cancelItem('piece');
+  });
+
+  it('focuses without a visible focus ring on pointerdown', () => {
+    const { controller, node } = mount(() => {});
+    const focus = vi.spyOn(node, 'focus');
+    node.dispatchEvent(pointerEvent('pointerdown', { pointerType: 'touch' } as never));
+    expect(focus).toHaveBeenCalledWith({ preventScroll: true, focusVisible: false });
     controller.cancelItem('piece');
   });
 

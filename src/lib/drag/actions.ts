@@ -39,7 +39,7 @@ export const draggable: Action<HTMLElement | SVGElement, DraggableParams> = (nod
       return;
     }
     event.preventDefault();
-    node.focus({ preventScroll: true });
+    node.focus({ preventScroll: true, focusVisible: false } as FocusOptions);
   }
 
   const onPointerMove = (event: PointerEvent) => params.controller.move(event);
