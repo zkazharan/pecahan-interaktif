@@ -39,16 +39,38 @@ describe('jumlah-penyebut-beda Peraga', () => {
     expect(view.container.querySelectorAll('[data-row-lines="hasil"] .whole-line')).toHaveLength(1);
   });
 
-  it('ignores a fraction whose common denominator would pass 24 and says why', async () => {
+  const typeInto = async (user: ReturnType<typeof userEvent.setup>, name: string, value: string) => {
+    const input = screen.getByLabelText(name, { exact: true });
+    await user.clear(input);
+    await user.type(input, value);
+    await user.tab();
+  };
+
+  it('disables the denominator step that would pass 24 parts', () => {
+    setup(frac(1, 5), frac(1, 5));
+    expect(screen.getByRole('button', { name: 'Tambah penyebut Pecahan kedua' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tambah penyebut Pecahan pertama' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Kurangi penyebut Pecahan kedua' })).toBeEnabled();
+  });
+
+  it('keeps steps that fit enabled', () => {
+    setup(frac(1, 4), frac(1, 5));
+    expect(screen.getByRole('button', { name: 'Tambah penyebut Pecahan pertama' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Tambah penyebut Pecahan kedua' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Kurangi penyebut Pecahan pertama' })).toBeEnabled();
+  });
+
+  it('ignores a typed fraction whose common denominator would pass 24 and says why', async () => {
     const { onparams, user } = setup(frac(1, 5), frac(1, 5));
-    await user.click(screen.getByRole('button', { name: 'Tambah penyebut Pecahan kedua' }));
+    await typeInto(user, 'Penyebut Pecahan kedua', '6');
     expect(onparams).not.toHaveBeenCalled();
     expect(screen.getByText(REJECTED)).toBeInTheDocument();
+    expect(screen.getByLabelText('Penyebut Pecahan kedua', { exact: true })).toHaveValue('5');
   });
 
   it('hides the rejected note after an accepted change', async () => {
     const { onparams, user } = setup(frac(1, 5), frac(1, 5));
-    await user.click(screen.getByRole('button', { name: 'Tambah penyebut Pecahan kedua' }));
+    await typeInto(user, 'Penyebut Pecahan kedua', '6');
     expect(screen.getByText(REJECTED)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Kurangi penyebut Pecahan kedua' }));
     expect(onparams).toHaveBeenCalledTimes(1);
@@ -57,7 +79,7 @@ describe('jumlah-penyebut-beda Peraga', () => {
 
   it('hides the rejected note when the fractions change from outside', async () => {
     const { view, user } = setup(frac(1, 5), frac(1, 5));
-    await user.click(screen.getByRole('button', { name: 'Tambah penyebut Pecahan kedua' }));
+    await typeInto(user, 'Penyebut Pecahan kedua', '6');
     expect(screen.getByText(REJECTED)).toBeInTheDocument();
     await view.rerender({ params: { a: frac(1, 4), b: frac(1, 6) } });
     expect(screen.queryByText(REJECTED)).toBeNull();
@@ -65,7 +87,7 @@ describe('jumlah-penyebut-beda Peraga', () => {
 
   it('hides the rejected note when the step changes', async () => {
     const { user } = setup(frac(1, 5), frac(1, 5));
-    await user.click(screen.getByRole('button', { name: 'Tambah penyebut Pecahan kedua' }));
+    await typeInto(user, 'Penyebut Pecahan kedua', '6');
     await user.click(next());
     expect(screen.queryByText(REJECTED)).toBeNull();
   });

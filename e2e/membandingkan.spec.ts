@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { dragTo, readCards, solveCurrentTask, valueOf } from './helpers';
+import { dragTo, openNumbers, readCards, solveCurrentTask, valueOf } from './helpers';
 
 test('teacher stacks 1/3 on 1/4 in Peraga', async ({ page }) => {
   await page.goto('./');
@@ -12,6 +12,7 @@ test('teacher stacks 1/3 on 1/4 in Peraga', async ({ page }) => {
 
 test('Peraga reads numbers from the link and writes changes back', async ({ page }) => {
   await page.goto('./#/membandingkan/peraga?a=2/5&b=3/7');
+  await openNumbers(page);
   await expect(page.getByLabel('Pembilang Pecahan A', { exact: true })).toHaveValue('2');
   await expect(page.getByLabel('Penyebut Pecahan B', { exact: true })).toHaveValue('7');
   await page.getByRole('button', { name: 'Tambah penyebut Pecahan A' }).click();
@@ -20,6 +21,7 @@ test('Peraga reads numbers from the link and writes changes back', async ({ page
 
 test('broken link numbers fall back to 1/3 and 1/4', async ({ page }) => {
   await page.goto('./#/membandingkan/peraga?a=abc&b=9/0');
+  await openNumbers(page);
   await expect(page.getByLabel('Penyebut Pecahan A', { exact: true })).toHaveValue('3');
   await expect(page.getByLabel('Penyebut Pecahan B', { exact: true })).toHaveValue('4');
 });
@@ -96,6 +98,7 @@ test('Peraga numbers survive a trip to Latihan', async ({ page }) => {
   await page.getByRole('link', { name: 'Latihan', exact: true }).click();
   await expect(page.getByText('Soal 1 dari 5')).toBeVisible();
   await page.getByRole('link', { name: 'Peraga', exact: true }).click();
+  await openNumbers(page);
   await expect(page.getByLabel('Pembilang Pecahan A', { exact: true })).toHaveValue('2');
   await expect(page.getByLabel('Penyebut Pecahan B', { exact: true })).toHaveValue('7');
 });

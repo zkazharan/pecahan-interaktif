@@ -13,6 +13,22 @@
   };
 
   let { step, total, onstep, caption, stage, controls, onshow }: Props = $props();
+
+  const WIDE = '(min-width: 600px)';
+
+  function isWide(): boolean {
+    return typeof matchMedia !== 'function' || matchMedia(WIDE).matches;
+  }
+
+  let open = $state(isWide());
+
+  $effect(() => {
+    if (typeof matchMedia !== 'function') return;
+    const query = matchMedia(WIDE);
+    const sync = () => (open = query.matches);
+    query.addEventListener?.('change', sync);
+    return () => query.removeEventListener?.('change', sync);
+  });
 </script>
 
 <section class="peraga">
@@ -20,7 +36,10 @@
   <div class="stage">{@render stage()}</div>
   <footer class="strip">
     {#if controls}
-      <div class="controls">{@render controls()}</div>
+      <details class="numbers" bind:open>
+        <summary>Ubah angka</summary>
+        <div class="controls">{@render controls()}</div>
+      </details>
     {/if}
     <div class="nav">
       {#if onshow}
@@ -58,10 +77,36 @@
     border-top: var(--line) solid var(--ink);
     background: rgba(251, 247, 236, 0.96);
   }
+  .numbers {
+    flex: 1 1 100%;
+  }
+  .numbers summary {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0 0.8em;
+    border: var(--line) solid var(--ink);
+    border-radius: var(--radius);
+    background: #fff;
+    font-weight: 600;
+    cursor: pointer;
+  }
   .controls {
     display: flex;
     flex-wrap: wrap;
     gap: 1em;
+    padding-top: 0.8em;
+  }
+  @media (min-width: 600px) {
+    .numbers {
+      flex: 0 1 auto;
+    }
+    .numbers summary {
+      display: none;
+    }
+    .controls {
+      padding-top: 0;
+    }
   }
   .nav {
     display: flex;

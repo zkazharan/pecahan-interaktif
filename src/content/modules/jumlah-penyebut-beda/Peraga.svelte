@@ -60,13 +60,17 @@
   }
 
   function setA(a: Fraction): void {
-    rejected = !fitsCommon(a, params.b);
-    if (!rejected) onparams({ ...params, a });
+    rejected = false;
+    onparams({ ...params, a });
   }
 
   function setB(b: Fraction): void {
-    rejected = !fitsCommon(params.a, b);
-    if (!rejected) onparams({ ...params, b });
+    rejected = false;
+    onparams({ ...params, b });
+  }
+
+  function reject(): void {
+    rejected = true;
   }
 </script>
 
@@ -95,8 +99,8 @@
     </div>
   {/snippet}
   {#snippet controls()}
-    <FractionStepper label="Pecahan pertama" value={params.a} limits={DIFF_LIMITS} onchange={setA} />
-    <FractionStepper label="Pecahan kedua" value={params.b} limits={DIFF_LIMITS} onchange={setB} />
+    <FractionStepper label="Pecahan pertama" value={params.a} limits={DIFF_LIMITS} accepts={(a) => fitsCommon(a, params.b)} onchange={setA} onreject={reject} />
+    <FractionStepper label="Pecahan kedua" value={params.b} limits={DIFF_LIMITS} accepts={(b) => fitsCommon(params.a, b)} onchange={setB} onreject={reject} />
     {#if step === 1}
       <CountStepper label="Potong ulang pita pertama" value={kNowA} min={1} max={maxCut(params.a.d)} onchange={(value) => (cutA = value)} />
       <CountStepper label="Potong ulang pita kedua" value={kNowB} min={1} max={maxCut(params.b.d)} onchange={(value) => (cutB = value)} />

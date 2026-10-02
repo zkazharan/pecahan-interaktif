@@ -51,7 +51,7 @@
     {/if}
   {/snippet}
   {#snippet stage()}
-    <Bar {rows} {stacking} draggable={step >= 1} note={stackNote(rows, stacking)} onstack={(next) => (stacking = next)} />
+    <Bar {rows} {stacking} draggable={step === 1 || step === 2} note={stackNote(rows, stacking)} onstack={(next) => (stacking = next)} />
   {/snippet}
   {#snippet controls()}
     <FractionStepper label="Pecahan A" value={params.a} limits={COMPARE_LIMITS} onchange={setA} />

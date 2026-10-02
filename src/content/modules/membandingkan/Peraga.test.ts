@@ -53,3 +53,20 @@ describe('membandingkan Peraga', () => {
     expect(onparams).toHaveBeenCalledWith({ a: { n: 1, d: 4 }, b: { n: 1, d: 4 } });
   });
 });
+
+describe('membandingkan Peraga dragging', () => {
+  const draggable = () => screen.getAllByRole('button', { name: /^Potongan / }).map((piece) => piece.getAttribute('aria-disabled') === 'false');
+
+  it('lets the teacher drag the pieces only while the caption asks for stacking', async () => {
+    const { user } = setup();
+    const next = () => screen.getByRole('button', { name: 'Lanjut →' });
+    expect(draggable()).toEqual([false, false]);
+    await user.click(next());
+    expect(draggable()).toEqual([true, true]);
+    await user.click(next());
+    expect(draggable()).toEqual([true, true]);
+    await user.click(next());
+    expect(screen.getByText(/lebih besar dari/)).toBeInTheDocument();
+    expect(draggable()).toEqual([false, false]);
+  });
+});

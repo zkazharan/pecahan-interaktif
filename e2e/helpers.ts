@@ -23,6 +23,13 @@ export async function dragTo(page: Page, source: Locator, target: Locator): Prom
   await page.mouse.up();
 }
 
+export async function openNumbers(page: Page): Promise<void> {
+  const summary = page.getByText('Ubah angka', { exact: true });
+  if (!(await summary.isVisible())) return;
+  const details = page.locator('details.numbers');
+  if (!(await details.evaluate((el) => (el as HTMLDetailsElement).open))) await summary.click();
+}
+
 export function valueOf(text: string): number {
   const [n, d] = text.split('/').map(Number);
   return n / d;

@@ -111,6 +111,53 @@ describe('FractionStepper', () => {
   });
 });
 
+describe('FractionStepper accepts', () => {
+  const onlyEvenDenominators = (value: { n: number; d: number }) => value.d % 2 === 0;
+
+  function setup(value = frac(1, 4)) {
+    const onchange = vi.fn();
+    const onreject = vi.fn();
+    render(FractionStepper, { props: { label: 'Pecahan A', value, limits: LIMITS, accepts: onlyEvenDenominators, onchange, onreject } });
+    return { onchange, onreject };
+  }
+
+  it('disables the steps whose next value is rejected', () => {
+    setup();
+    expect(screen.getByRole('button', { name: 'Tambah penyebut Pecahan A' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Kurangi penyebut Pecahan A' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Tambah pembilang Pecahan A' })).toBeEnabled();
+  });
+
+  it('keeps allowed steps enabled', async () => {
+    const { onchange } = setup(frac(1, 5));
+    const plus = screen.getByRole('button', { name: 'Tambah penyebut Pecahan A' });
+    expect(plus).toBeEnabled();
+    await userEvent.click(plus);
+    expect(onchange).toHaveBeenCalledWith({ n: 1, d: 6 });
+  });
+
+  it('puts a rejected typed value back and reports it', async () => {
+    const { onchange, onreject } = setup();
+    const input = screen.getByLabelText('Penyebut Pecahan A') as HTMLInputElement;
+    await userEvent.clear(input);
+    await userEvent.type(input, '5');
+    await fireEvent.change(input);
+    expect(input.value).toBe('4');
+    expect(onchange).not.toHaveBeenCalled();
+    expect(onreject).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not report a typed value that is merely out of range', async () => {
+    const { onreject } = setup();
+    const input = screen.getByLabelText('Penyebut Pecahan A') as HTMLInputElement;
+    await userEvent.clear(input);
+    await userEvent.type(input, '99');
+    await fireEvent.change(input);
+    expect(input.value).toBe('4');
+    expect(onreject).not.toHaveBeenCalled();
+  });
+});
+
 describe('TaskChecks', () => {
   it('labels each task by its outcome', () => {
     render(TaskChecks, { props: { outcomes: ['first-try', 'shown'], total: 5 } });
