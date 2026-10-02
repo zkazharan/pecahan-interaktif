@@ -31,8 +31,20 @@ export function viewHeight(rowCount: number): number {
   return rowY(rowCount - 1) + BAR.rowHeight + 20;
 }
 
+function atLeastOne(count: number | undefined): number {
+  return count !== undefined && Number.isFinite(count) ? Math.max(1, Math.floor(count)) : 1;
+}
+
+export function cutOf(row: BarRow): number {
+  return atLeastOne(row.cut);
+}
+
+export function wholesOf(row: BarRow): number {
+  return atLeastOne(row.wholes);
+}
+
 export function barUnits(rows: readonly BarRow[]): number {
-  return Math.max(1, ...rows.map((row) => row.wholes ?? 1));
+  return Math.max(1, ...rows.map(wholesOf));
 }
 
 export function unitWidth(units: number): number {
@@ -44,21 +56,21 @@ export function pieceWidth(value: Fraction, units = 1): number {
 }
 
 export function shownValue(row: BarRow): Fraction {
-  const k = row.cut ?? 1;
+  const k = cutOf(row);
   return { n: row.value.n * k, d: row.value.d * k };
 }
 
 export function dividerXs(row: BarRow, units: number): number[] {
   const parts = shownValue(row).d;
   const step = unitWidth(units) / parts;
-  const total = parts * (row.wholes ?? 1);
+  const total = parts * wholesOf(row);
   return Array.from({ length: total - 1 }, (_, i) => i + 1)
     .filter((j) => j % parts !== 0)
     .map((j) => round(step * j));
 }
 
 export function wholeXs(row: BarRow, units: number): number[] {
-  return Array.from({ length: (row.wholes ?? 1) - 1 }, (_, i) => round(unitWidth(units) * (i + 1)));
+  return Array.from({ length: wholesOf(row) - 1 }, (_, i) => round(unitWidth(units) * (i + 1)));
 }
 
 export function pieceDividerXs(row: BarRow, units: number): number[] {
@@ -90,16 +102,34 @@ export function stackNote(rows: readonly BarRow[], stacking: Stacking): string {
 
 const MIN_TOUCH = 48;
 
+export type BarSize = { width: number; height: number; rows: number };
+
+function renderScale(size: BarSize): number {
+  const scales = [size.width / BAR.viewWidth];
+  if (size.height > 0 && size.rows > 0) scales.push(size.height / viewHeight(size.rows));
+  const positive = scales.filter((scale) => scale > 0);
+  return positive.length > 0 ? Math.min(...positive) : 0;
+}
+
 export function hitBox(
   value: Fraction,
-  svgWidth: number,
+  size: BarSize,
   units = 1,
 ): { x: number; y: number; width: number; height: number } {
-  const minUnits = svgWidth > 0 ? MIN_TOUCH / (svgWidth / BAR.viewWidth) : 0;
+  const scale = renderScale(size);
+  const minUnits = scale > 0 ? MIN_TOUCH / scale : 0;
   const base = pieceWidth(value, units);
   const width = Math.max(base, minUnits);
   const height = Math.max(BAR.rowHeight, minUnits);
   return { x: (base - width) / 2, y: (BAR.rowHeight - height) / 2, width, height };
+}
+
+export function visibleTranslate(transform: string): { x: number; y: number } | null {
+  const match = /^matrix(3d)?\(([^)]*)\)$/.exec(transform.trim());
+  if (!match) return null;
+  const values = match[2].split(',').map(Number);
+  const [x, y] = match[1] ? [values[12], values[13]] : [values[4], values[5]];
+  return Number.isFinite(x) && Number.isFinite(y) ? { x, y } : null;
 }
 
 const NOTE_CHAR_WIDTH = 22;

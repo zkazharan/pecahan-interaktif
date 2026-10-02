@@ -46,3 +46,13 @@ describe('staggerRows', () => {
     expect(staggerRows([1, 2, 3], 12)).toEqual([0, 1, 0]);
   });
 });
+
+describe('tick guards', () => {
+  it('rejects a line with no length or no divisions', () => {
+    expect(() => tickCount(0, 4)).toThrow(RangeError);
+    expect(() => tickCount(1, 0)).toThrow(RangeError);
+    expect(() => tickX(0, 0, 4)).toThrow(RangeError);
+    expect(() => tickX(0, 1, 0)).toThrow(RangeError);
+    expect(() => tickIds(0, 2)).toThrow(RangeError);
+  });
+});

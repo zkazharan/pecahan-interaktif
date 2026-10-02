@@ -164,6 +164,57 @@ describe('Bar', () => {
       expect(animate).not.toHaveBeenCalled();
     });
 
+    function running(pieceId: string, container: HTMLElement) {
+      const el = container.querySelector(`[data-piece-pos="${pieceId}"]`) as Element & { getAnimations?: () => Animation[] };
+      const cancel = vi.fn();
+      el.getAnimations = () => [{ cancel } as unknown as Animation];
+      return { el, cancel };
+    }
+
+    it('starts an interrupted move from where the piece is visible', async () => {
+      reducedMotion(false);
+      const { rerender, container } = render(Bar, { props: { rows: ROWS, stacking: { pieceOf: 'a', onto: 'b' } } });
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      const { cancel } = running('a', container);
+      vi.spyOn(window, 'getComputedStyle').mockReturnValue({ transform: 'matrix(1, 0, 0, 1, 77, 88)' } as CSSStyleDeclaration);
+      await rerender({ stacking: null });
+      await tick();
+      const piece = container.querySelector('[data-piece-pos="a"]');
+      const calls = animate.mock.calls.filter((_, i) => animate.mock.contexts[i] === piece);
+      expect(calls).toHaveLength(1);
+      expect(calls[0][0]).toEqual([
+        { transform: 'translate(77px, 88px)' },
+        { transform: `translate(${BAR.x0}px, ${rowY(0)}px)` },
+      ]);
+      expect(cancel).toHaveBeenCalled();
+    });
+
+    it('falls back to the last position when nothing is running', async () => {
+      reducedMotion(false);
+      const { rerender, container } = render(Bar, { props: { rows: ROWS, stacking: { pieceOf: 'a', onto: 'b' } } });
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      await rerender({ stacking: null });
+      await tick();
+      const piece = container.querySelector('[data-piece-pos="a"]');
+      const calls = animate.mock.calls.filter((_, i) => animate.mock.contexts[i] === piece);
+      expect(calls[0][0]).toEqual([
+        { transform: `translate(${BAR.x0 + 8}px, ${rowY(1) - 18}px)` },
+        { transform: `translate(${BAR.x0}px, ${rowY(0)}px)` },
+      ]);
+    });
+
+    it('forgets rows that are gone', async () => {
+      reducedMotion(false);
+      const { rerender, container } = render(Bar, { props: { rows: ROWS, stacking: null } });
+      await rerender({ rows: [ROWS[1]] });
+      await tick();
+      const animate = vi.spyOn(Element.prototype, 'animate');
+      await rerender({ rows: ROWS, stacking: { pieceOf: 'a', onto: 'b' } });
+      await tick();
+      const piece = container.querySelector('[data-piece-pos="a"]');
+      expect(animate.mock.calls.filter((_, i) => animate.mock.contexts[i] === piece)).toHaveLength(0);
+    });
+
     it('does not animate under reduced motion', async () => {
       reducedMotion(true);
       const animate = vi.spyOn(Element.prototype, 'animate');
@@ -172,6 +223,27 @@ describe('Bar', () => {
       await tick();
       expect(animate).not.toHaveBeenCalled();
     });
+  });
+
+  it('does not fade dividers in on the first mount', () => {
+    const { container } = render(Bar, { props: { rows: ROWS, stacking: null } });
+    expect(container.querySelectorAll('.divider').length).toBeGreaterThan(0);
+    expect(container.querySelectorAll('.divider.fade')).toHaveLength(0);
+  });
+
+  it('fades in only the dividers added when the cut changes', async () => {
+    const { container, rerender } = render(Bar, { props: { rows: [{ ...ROWS[0], cut: 1 }], stacking: null } });
+    await rerender({ rows: [{ ...ROWS[0], cut: 2 }] });
+    await tick();
+    const row = container.querySelectorAll('[data-row="a"] .divider');
+    const fading = container.querySelectorAll('[data-row="a"] .divider.fade');
+    expect(row).toHaveLength(5);
+    expect(fading).toHaveLength(3);
+  });
+
+  it('does not throw for a row with zero wholes', () => {
+    const rows: BarRow[] = [{ id: 'a', value: frac(1, 3), color: 'x', wholes: 0 }];
+    expect(() => render(Bar, { props: { rows, stacking: null } })).not.toThrow();
   });
 
   it('hides the label of a row with hideLabel', () => {

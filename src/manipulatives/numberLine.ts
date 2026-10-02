@@ -14,7 +14,12 @@ export const LINE = {
 
 const CROWDED = 0.22;
 
+function assertLine(max: number, perUnit: number): void {
+  if (!(max >= 1) || !(perUnit >= 1)) throw new RangeError(`invalid number line: max ${max}, perUnit ${perUnit}`);
+}
+
 export function tickCount(max: number, perUnit: number): number {
+  assertLine(max, perUnit);
   return max * perUnit + 1;
 }
 
@@ -32,6 +37,7 @@ export function tickIndexOf(id: string): number {
 }
 
 export function tickX(k: number, max: number, perUnit: number): number {
+  assertLine(max, perUnit);
   return LINE.x0 + (LINE.width * k) / (max * perUnit);
 }
 

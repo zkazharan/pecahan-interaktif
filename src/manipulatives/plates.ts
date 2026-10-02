@@ -25,8 +25,8 @@ export function startPlates(pieces: number, plateCount: number): PlatesState {
   return { plates: new Array<number>(plateCount).fill(0), tray: pieces };
 }
 
-function plateIndexOf(place: string): number {
-  const match = /^plate-(\d+)$/.exec(place);
+export function plateIndexOf(place: string): number {
+  const match = /^plate-(0|[1-9]\d*)$/.exec(place);
   return match ? Number(match[1]) : -1;
 }
 
@@ -63,6 +63,9 @@ export function totalPieces(state: PlatesState): number {
 }
 
 export function fillGreedy(pieces: number, plateCount: number, capacity: number): PlatesState {
+  if (!Number.isInteger(pieces) || pieces < 0) throw new RangeError(`invalid piece count: ${pieces}`);
+  if (!Number.isInteger(plateCount) || plateCount < 1) throw new RangeError(`invalid plate count: ${plateCount}`);
+  if (!Number.isInteger(capacity) || capacity < 1) throw new RangeError(`invalid capacity: ${capacity}`);
   let remaining = pieces;
   const plates = Array.from({ length: plateCount }, () => {
     const count = Math.min(capacity, remaining);

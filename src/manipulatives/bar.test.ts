@@ -3,6 +3,7 @@ import { frac } from '../lib/fraction';
 import {
   BAR,
   barUnits,
+  cutOf,
   dividerXs,
   hitBox,
   maxCut,
@@ -17,7 +18,9 @@ import {
   stackNote,
   unitWidth,
   viewHeight,
+  visibleTranslate,
   wholeXs,
+  wholesOf,
   type BarRow,
 } from './bar';
 
@@ -70,13 +73,15 @@ describe('stackNote', () => {
 });
 
 describe('hitBox', () => {
+  const sized = (width: number, height: number, rows = 1) => ({ width, height, rows });
+
   it('equals the piece box when there is no scaling', () => {
-    expect(hitBox(frac(1, 4), 1000)).toEqual({ x: 0, y: 0, width: 205, height: BAR.rowHeight });
-    expect(hitBox(frac(1, 4), 0)).toEqual({ x: 0, y: 0, width: 205, height: BAR.rowHeight });
+    expect(hitBox(frac(1, 4), sized(1000, 1000))).toEqual({ x: 0, y: 0, width: 205, height: BAR.rowHeight });
+    expect(hitBox(frac(1, 4), sized(0, 0))).toEqual({ x: 0, y: 0, width: 205, height: BAR.rowHeight });
   });
 
   it('grows to a 48 px touch target on a small screen', () => {
-    const box = hitBox(frac(1, 12), 360);
+    const box = hitBox(frac(1, 12), sized(360, 1000));
     expect(box.width).toBeGreaterThanOrEqual(48 / 0.36 - 0.001);
     expect(box.height).toBeGreaterThanOrEqual(48 / 0.36 - 0.001);
     expect(box.x + box.width / 2).toBeCloseTo(pieceWidth(frac(1, 12)) / 2);
@@ -84,7 +89,55 @@ describe('hitBox', () => {
   });
 
   it('keeps pieces that are already large enough', () => {
-    expect(hitBox(frac(1, 2), 360)).toMatchObject({ x: 0, width: 410 });
+    expect(hitBox(frac(1, 2), sized(360, 1000))).toMatchObject({ x: 0, width: 410 });
+  });
+
+  it('uses the smaller scale when the svg is letterboxed by its height', () => {
+    const rows = 2;
+    const height = viewHeight(rows);
+    const letterboxed = hitBox(frac(1, 12), sized(1000, height * 0.2, rows));
+    const scale = 0.2;
+    expect(letterboxed.width).toBeGreaterThanOrEqual(48 / scale - 0.001);
+    expect(letterboxed.height).toBeGreaterThanOrEqual(48 / scale - 0.001);
+    const wide = hitBox(frac(1, 12), sized(1000, height, rows));
+    expect(wide.width).toBeLessThan(letterboxed.width);
+  });
+
+  it('ignores an unmeasured height', () => {
+    expect(hitBox(frac(1, 12), sized(360, 0))).toEqual(hitBox(frac(1, 12), sized(360, 1000)));
+  });
+});
+
+describe('count guards', () => {
+  it('clamps cut and wholes to whole numbers of at least one', () => {
+    const row = (extra: Partial<BarRow>): BarRow => ({ id: 'r', value: frac(1, 3), color: 'x', ...extra });
+    expect(cutOf(row({}))).toBe(1);
+    expect(cutOf(row({ cut: 0 }))).toBe(1);
+    expect(cutOf(row({ cut: -2 }))).toBe(1);
+    expect(cutOf(row({ cut: 2.9 }))).toBe(2);
+    expect(cutOf(row({ cut: Number.NaN }))).toBe(1);
+    expect(wholesOf(row({ wholes: 0 }))).toBe(1);
+    expect(wholesOf(row({ wholes: 3.5 }))).toBe(3);
+  });
+
+  it('does not throw for a row with zero wholes', () => {
+    const row: BarRow = { id: 'r', value: frac(1, 3), color: 'x', wholes: 0, cut: 0 };
+    expect(dividerXs(row, 1)).toEqual(dividerXs({ ...row, wholes: 1, cut: 1 }, 1));
+    expect(wholeXs(row, 1)).toEqual([]);
+    expect(barUnits([row])).toBe(1);
+    expect(shownValue(row)).toEqual({ n: 1, d: 3 });
+  });
+});
+
+describe('visibleTranslate', () => {
+  it('reads the offset out of a computed matrix', () => {
+    expect(visibleTranslate('matrix(1, 0, 0, 1, 12.5, -4)')).toEqual({ x: 12.5, y: -4 });
+    expect(visibleTranslate('matrix3d(1,0,0,0,0,1,0,0,0,0,1,0,30,40,0,1)')).toEqual({ x: 30, y: 40 });
+  });
+
+  it('gives null when there is nothing to read', () => {
+    expect(visibleTranslate('none')).toBeNull();
+    expect(visibleTranslate('')).toBeNull();
   });
 });
 

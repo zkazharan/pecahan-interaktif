@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { draggable, dropTarget } from '../lib/drag/actions';
   import { announce } from '../lib/drag/announce';
   import { DragController } from '../lib/drag/controller';
@@ -19,7 +19,9 @@
     shownValue,
     unitWidth,
     viewHeight,
+    visibleTranslate,
     wholeXs,
+    wholesOf,
     type BarRow,
     type Stacking,
   } from './bar';
@@ -37,10 +39,17 @@
   const PIECE = 'piece-';
   let instant = false;
   const lastPositions = new Map<string, { x: number; y: number }>();
+  const fade = { on: false };
   let svgWidth = $state(0);
+  let svgHeight = $state(0);
   let root: HTMLElement | undefined = $state();
 
   const units = $derived(barUnits(rows));
+  const size = $derived({ width: svgWidth, height: svgHeight, rows: rows.length });
+
+  onMount(() => {
+    fade.on = true;
+  });
 
   const controller = new DragController({
     announce,
@@ -59,14 +68,32 @@
     },
   });
 
+  function runningOn(element: Element | null | undefined): Animation[] {
+    return typeof element?.getAnimations === 'function' ? element.getAnimations() : [];
+  }
+
   $effect(() => {
     const skip = instant || prefersReducedMotion();
+    const ids = new Set(rows.map((row) => row.id));
+    for (const id of lastPositions.keys()) if (!ids.has(id)) lastPositions.delete(id);
     for (const row of rows) {
       const next = piecePosition(rows, row.id, stacking);
-      const previous = lastPositions.get(row.id);
+      let previous = lastPositions.get(row.id);
       lastPositions.set(row.id, next);
-      if (skip || !previous || (previous.x === next.x && previous.y === next.y)) continue;
-      root?.querySelector(`[data-piece-pos="${row.id}"]`)?.animate(
+      const element = root?.querySelector(`[data-piece-pos="${row.id}"]`);
+      const active = runningOn(element);
+      if (skip) {
+        for (const animation of active) animation.cancel();
+        continue;
+      }
+      if (!previous || !element) continue;
+      if (active.length > 0) {
+        const seen = visibleTranslate(getComputedStyle(element).transform);
+        if (seen) previous = seen;
+        for (const animation of active) animation.cancel();
+      }
+      if (previous.x === next.x && previous.y === next.y) continue;
+      element.animate(
         [
           { transform: `translate(${previous.x}px, ${previous.y}px)` },
           { transform: `translate(${next.x}px, ${next.y}px)` },
@@ -93,7 +120,7 @@
   );
 </script>
 
-<div class="bar-wrap" bind:this={root} bind:clientWidth={svgWidth}>
+<div class="bar-wrap" bind:this={root} bind:clientWidth={svgWidth} bind:clientHeight={svgHeight}>
 <svg
   class="bar"
   class:interactive={canDrag}
@@ -109,13 +136,13 @@
         class="whole"
         x={BAR.x0}
         {y}
-        width={unitWidth(units) * (row.wholes ?? 1)}
+        width={unitWidth(units) * wholesOf(row)}
         height={BAR.rowHeight}
         data-testid={`bar-target-${row.id}`}
         use:dropTarget={{ controller, id: row.id, label: row.hideLabel ? 'pita' : `pita ${spokenFraction(shown)}`, accepts: accepts(row.id) }}
       />
       {#each dividerXs(row, units) as x (x)}
-        <line class="divider" x1={BAR.x0 + x} x2={BAR.x0 + x} y1={y} y2={y + BAR.rowHeight} />
+        <line class="divider" class:fade={fade.on} x1={BAR.x0 + x} x2={BAR.x0 + x} y1={y} y2={y + BAR.rowHeight} />
       {/each}
       {#if stacking?.pieceOf === row.id}
         <rect class="ghost" data-ghost x={BAR.x0 + 6} y={y + 6} width={Math.max(pieceWidth(row.value, units) - 12, 0)} height={BAR.rowHeight - 12} />
@@ -132,7 +159,7 @@
 
   {#each ordered as row (row.id)}
     {@const pos = piecePosition(rows, row.id, stacking)}
-    {@const hit = hitBox(row.value, svgWidth, units)}
+    {@const hit = hitBox(row.value, size, units)}
     <g class="piece-pos" data-piece-pos={row.id} style:transform={`translate(${pos.x}px, ${pos.y}px)`}>
       <g
         class="piece"
@@ -143,7 +170,7 @@
         <rect class="hit" x={hit.x} y={hit.y} width={hit.width} height={hit.height} />
         <rect width={pieceWidth(row.value, units)} height={BAR.rowHeight} style:fill={row.color} />
         {#each pieceDividerXs(row, units) as x (x)}
-          <line class="divider" x1={x} x2={x} y1={0} y2={BAR.rowHeight} />
+          <line class="divider" class:fade={fade.on} x1={x} x2={x} y1={0} y2={BAR.rowHeight} />
         {/each}
       </g>
     </g>
@@ -189,6 +216,8 @@
     stroke: var(--ink);
     stroke-width: 3;
     stroke-dasharray: 8 8;
+  }
+  .divider.fade {
     animation: appear 200ms ease-out;
   }
   .whole-line {
@@ -211,7 +240,7 @@
     stroke: none;
     pointer-events: all;
   }
-  .bar:has(:global([data-dragging])) .piece:not(:global([data-dragging])) rect:not(.hit) {
+  .bar:has(:global([data-dragging])) .piece:not(:global([data-dragging])) :is(rect:not(.hit), .divider) {
     opacity: 0.5;
   }
   .piece.grab {

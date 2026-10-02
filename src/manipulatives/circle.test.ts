@@ -74,6 +74,11 @@ describe('guidePoints', () => {
     expect(left.x).toBeCloseTo(CIRCLE.cx - CIRCLE.r);
   });
 
+  it('rounds a fractional count down', () => {
+    expect(guidePoints(4.9)).toHaveLength(4);
+    expect(guidePoints(1.9)).toEqual([]);
+  });
+
   it('gives no guide for a whole circle', () => {
     expect(guidePoints(1)).toEqual([]);
     expect(guidePoints(0)).toEqual([]);

@@ -7,6 +7,7 @@ import {
   fullPlates,
   movePiece,
   plateId,
+  plateIndexOf,
   plateItemId,
   sourceOf,
   startPlates,
@@ -77,5 +78,40 @@ describe('helpers', () => {
   it('knows where a dragged piece came from', () => {
     expect(sourceOf(trayItemId(3))).toBe(TRAY);
     expect(sourceOf(plateItemId(1, 2))).toBe(plateId(1));
+  });
+});
+
+describe('fillGreedy guards', () => {
+  it('rejects negative or fractional piece counts', () => {
+    expect(() => fillGreedy(-1, 2, 4)).toThrow(RangeError);
+    expect(() => fillGreedy(2.5, 2, 4)).toThrow(RangeError);
+  });
+
+  it('rejects an empty tray of plates or no capacity', () => {
+    expect(() => fillGreedy(3, 0, 4)).toThrow(RangeError);
+    expect(() => fillGreedy(3, 1.5, 4)).toThrow(RangeError);
+    expect(() => fillGreedy(3, 2, 0)).toThrow(RangeError);
+    expect(() => fillGreedy(3, 2, 2.5)).toThrow(RangeError);
+  });
+
+  it('still fills valid input', () => {
+    expect(fillGreedy(5, 2, 4)).toEqual({ plates: [4, 1], tray: 0 });
+    expect(fillGreedy(0, 1, 4)).toEqual({ plates: [0], tray: 0 });
+  });
+});
+
+describe('plateIndexOf', () => {
+  it('accepts plain indexes only', () => {
+    expect(plateIndexOf('plate-0')).toBe(0);
+    expect(plateIndexOf('plate-12')).toBe(12);
+    expect(plateIndexOf('plate-01')).toBe(-1);
+    expect(plateIndexOf('plate-00')).toBe(-1);
+    expect(plateIndexOf('plate-')).toBe(-1);
+    expect(plateIndexOf('tray')).toBe(-1);
+  });
+
+  it('keeps a padded id from moving pieces', () => {
+    const state = startPlates(3, 2);
+    expect(canMove(state, TRAY, 'plate-01', 4)).toBe(false);
   });
 });
