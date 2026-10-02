@@ -34,6 +34,18 @@ describe('StepNav', () => {
     expect(screen.getByRole('button', { name: 'Lanjut →' })).toBeDisabled();
   });
 
+  it('shows a Latihan link instead of Lanjut on the last step when given one', () => {
+    render(StepNav, { props: { step: 3, total: 4, onstep: vi.fn(), finishHref: '#/senilai/latihan' } });
+    expect(screen.getByRole('link', { name: 'Latihan →' })).toHaveAttribute('href', '#/senilai/latihan');
+    expect(screen.queryByRole('button', { name: 'Lanjut →' })).toBeNull();
+  });
+
+  it('keeps Lanjut before the last step even with a Latihan link', () => {
+    render(StepNav, { props: { step: 2, total: 4, onstep: vi.fn(), finishHref: '#/senilai/latihan' } });
+    expect(screen.getByRole('button', { name: 'Lanjut →' })).toBeEnabled();
+    expect(screen.queryByRole('link', { name: 'Latihan →' })).toBeNull();
+  });
+
   it('disables Lanjut when step is past the last one', () => {
     render(StepNav, { props: { step: 7, total: 4, onstep: vi.fn() } });
     expect(screen.getByRole('button', { name: 'Lanjut →' })).toBeDisabled();

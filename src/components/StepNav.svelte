@@ -1,5 +1,9 @@
 <script lang="ts">
-  let { step, total, onstep }: { step: number; total: number; onstep: (step: number) => void } = $props();
+  type Props = { step: number; total: number; onstep: (step: number) => void; finishHref?: string };
+
+  let { step, total, onstep, finishHref }: Props = $props();
+
+  const last = $derived(step >= total - 1);
 </script>
 
 <div class="step-nav">
@@ -9,7 +13,11 @@
       <li class:done={i <= step}></li>
     {/each}
   </ol>
-  <button type="button" class="btn primary" disabled={step >= total - 1} onclick={() => onstep(step + 1)}>Lanjut →</button>
+  {#if last && finishHref && total > 0}
+    <a class="btn primary" href={finishHref}>Latihan →</a>
+  {:else}
+    <button type="button" class="btn primary" disabled={last} onclick={() => onstep(step + 1)}>Lanjut →</button>
+  {/if}
 </div>
 
 <style>

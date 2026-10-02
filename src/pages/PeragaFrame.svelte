@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import StepNav from '../components/StepNav.svelte';
+  import { router } from '../lib/route.svelte';
 
   type Props = {
     step: number;
@@ -22,6 +23,8 @@
   }
 
   let open = $state(isWide());
+
+  const latihanHref = $derived(router.route.name === 'module' ? `#/${router.route.slug}/latihan` : undefined);
 
   $effect(() => {
     if (typeof matchMedia !== 'function') return;
@@ -49,7 +52,7 @@
       {#if onshow}
         <button type="button" class="btn" onclick={onshow}>Tunjukkan</button>
       {/if}
-      <StepNav {step} {total} {onstep} />
+      <StepNav {step} {total} {onstep} finishHref={latihanHref} />
     </div>
   </footer>
 </section>

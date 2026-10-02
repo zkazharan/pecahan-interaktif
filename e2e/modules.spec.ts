@@ -156,3 +156,12 @@ test('pecahan-campuran: the three whole-number labels do not collide', async ({ 
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test('the last Peraga step links straight to Latihan', async ({ page }) => {
+  await page.goto('./#/membandingkan/peraga');
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Lanjut →' }).click();
+  await expect(page.getByRole('button', { name: 'Lanjut →' })).toHaveCount(0);
+  await page.getByRole('link', { name: 'Latihan →' }).click();
+  await expect(page).toHaveURL(/#\/membandingkan\/latihan$/);
+  await expect(page.getByText('Soal 1 dari 5')).toBeVisible();
+});
