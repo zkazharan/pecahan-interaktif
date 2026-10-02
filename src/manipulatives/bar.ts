@@ -100,6 +100,17 @@ export function stackNote(rows: readonly BarRow[], stacking: Stacking): string {
   return relation > 0 ? 'lebih panjang!' : relation < 0 ? 'lebih pendek!' : 'pas sama!';
 }
 
+const LABEL_BASE_SIZE = 36;
+const LABEL_MIN_PX = 18;
+const LABEL_MAX_SIZE = 64;
+
+export function labelMetrics(renderedWidth: number): { fontSize: number; gapAbove: number; gapBelow: number; half: number } {
+  const wanted = renderedWidth > 0 ? Math.ceil((LABEL_MIN_PX * BAR.viewWidth) / renderedWidth) : LABEL_BASE_SIZE;
+  const fontSize = Math.min(LABEL_MAX_SIZE, Math.max(LABEL_BASE_SIZE, wanted));
+  const scale = fontSize / LABEL_BASE_SIZE;
+  return { fontSize, gapAbove: 8 * scale, gapBelow: 34 * scale, half: 24 * scale };
+}
+
 const MIN_TOUCH = 48;
 
 export type BarSize = { width: number; height: number; rows: number };

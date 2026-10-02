@@ -101,3 +101,58 @@ test('home lists all eight modules as ready', async ({ page }) => {
   }
   await expect(page.getByText('sedang disiapkan')).toHaveCount(0);
 });
+
+test('senilai: bar fraction labels are at least 18 px on screen', async ({ page }) => {
+  await page.goto('./#/senilai/peraga?f=1/2');
+  await expect(page.locator('.bar .label text').first()).toBeVisible();
+  const sizes = await page
+    .locator('.bar .label text')
+    .evaluateAll((els) => els.map((el) => parseFloat(getComputedStyle(el).fontSize) * (el as SVGGraphicsElement).getScreenCTM()!.a));
+  expect(sizes.length).toBeGreaterThan(0);
+  for (const size of sizes) expect(size).toBeGreaterThanOrEqual(17.9);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test('jumlah-penyebut-beda: labels of the two-whole row stay readable and apart', async ({ page }) => {
+  await page.goto('./#/jumlah-penyebut-beda/peraga?a=3/4&b=2/3');
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Lanjut →' }).click();
+  await expect(page.locator('[data-row="hasil"]')).toHaveCount(1);
+  const result = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('.bar [data-row]')].map((row) => {
+      const [n, d] = [...row.querySelectorAll('.label text')].map((t) => t.getBoundingClientRect());
+      const line = row.querySelector('.label line')!.getBoundingClientRect();
+      return { n, d, line };
+    });
+    const texts = [...document.querySelectorAll('.bar .label text')];
+    const sizes = texts.map((t) => parseFloat(getComputedStyle(t).fontSize) * (t as SVGGraphicsElement).getScreenCTM()!.a);
+    const touching = rows.some((r) => r.n.bottom > r.line.top + 4 || r.d.top < r.line.bottom - 4);
+    const stacked = rows.slice(1).some((r, i) => r.n.top < rows[i].d.bottom);
+    return { min: Math.min(...sizes), touching, stacked };
+  });
+  expect(result.min).toBeGreaterThanOrEqual(17.9);
+  expect(result.stacked).toBe(false);
+});
+
+test('membaca-pecahan: whole-number labels on the line are at least 18 px', async ({ page }) => {
+  await page.goto('./#/membaca-pecahan/peraga?f=3/4');
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Lanjut →' }).click();
+  const units = page.locator('.unit');
+  await expect(units.first()).toBeVisible();
+  const sizes = await units.evaluateAll((els) => els.map((el) => parseFloat(getComputedStyle(el).fontSize)));
+  expect(sizes.length).toBeGreaterThan(1);
+  for (const size of sizes) expect(size).toBeGreaterThanOrEqual(18);
+  const boxes = await units.evaluateAll((els) => els.map((el) => el.getBoundingClientRect()).map((r) => [r.left, r.right]));
+  for (let i = 1; i < boxes.length; i++) expect(boxes[i][0]).toBeGreaterThanOrEqual(boxes[i - 1][1]);
+});
+
+test('pecahan-campuran: the three whole-number labels do not collide', async ({ page }) => {
+  await page.goto('./#/pecahan-campuran/peraga');
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Lanjut →' }).click();
+  const units = page.locator('.unit');
+  await expect(units).toHaveCount(3);
+  const boxes = await units.evaluateAll((els) => els.map((el) => el.getBoundingClientRect()).map((r) => [r.left, r.right]));
+  for (let i = 1; i < boxes.length; i++) expect(boxes[i][0]).toBeGreaterThanOrEqual(boxes[i - 1][1]);
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+});

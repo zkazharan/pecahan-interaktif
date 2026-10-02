@@ -40,7 +40,7 @@ describe('LatihanView', () => {
       expect(screen.getByText(`Soal ${i + 1} dari 5`)).toBeInTheDocument();
       await answerRight(user, i === 4);
     }
-    expect(screen.getByRole('img', { name: 'Stempel Hebat! Nilai 100' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Stempel Hebat! Nilai 100. MODUL 3 SELESAI' })).toBeInTheDocument();
     expect(screen.getByText('5 dari 5 langsung benar.')).toBeInTheDocument();
     expect(screen.getByText('Kesimpulan contoh.')).toBeInTheDocument();
     expect(store.all().contoh.bestFirstTry).toBe(5);
@@ -60,7 +60,7 @@ describe('LatihanView', () => {
     expect(screen.getByLabelText('Soal 1: dibantu')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Soal berikutnya →' }));
     for (let i = 1; i < 5; i++) await answerRight(user, i === 4);
-    expect(screen.getByRole('img', { name: 'Stempel Bagus! Nilai 80' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Stempel Bagus! Nilai 80. MODUL 3 SELESAI' })).toBeInTheDocument();
     expect(store.all().contoh.bestFirstTry).toBe(4);
   });
 

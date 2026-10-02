@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/svelte';
+import { tick } from 'svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Circle from './Circle.svelte';
 import { equalSlices } from './circle';
@@ -36,6 +37,23 @@ describe('Circle', () => {
     expect(onshade).toHaveBeenCalledTimes(3);
     await fireEvent.keyDown(first, { key: 'a' });
     expect(onshade).toHaveBeenCalledTimes(3);
+  });
+
+  it('draws the focus ring as its own layer above every slice', async () => {
+    const { container } = render(Circle, { props: { slices: equalSlices(4), shaded: [], onshade: vi.fn(), label: 'Martabak' } });
+    expect(container.querySelector('[data-focus-ring]')).toBeNull();
+    const second = screen.getByRole('button', { name: 'Potongan 2' });
+    second.focus();
+    await tick();
+    const ring = container.querySelector('[data-focus-ring]')!;
+    expect(ring).not.toBeNull();
+    expect(ring.getAttribute('d')).toBe(second.getAttribute('d'));
+    const children = [...container.querySelectorAll('svg > *')];
+    const lastSlice = container.querySelector('[data-slice="3"]')!;
+    expect(children.indexOf(ring)).toBeGreaterThan(children.indexOf(lastSlice));
+    second.blur();
+    await tick();
+    expect(container.querySelector('[data-focus-ring]')).toBeNull();
   });
 
   it('hides itself from assistive tech when decorative', () => {

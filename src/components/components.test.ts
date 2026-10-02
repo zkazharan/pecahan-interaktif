@@ -123,6 +123,6 @@ describe('TaskChecks', () => {
 describe('Stamp', () => {
   it('describes itself for screen readers', () => {
     render(Stamp, { props: { text: 'Bagus!', score: 80, caption: 'MODUL 3 SELESAI' } });
-    expect(screen.getByRole('img', { name: 'Stempel Bagus! Nilai 80' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: 'Stempel Bagus! Nilai 80. MODUL 3 SELESAI' })).toBeInTheDocument();
   });
 });

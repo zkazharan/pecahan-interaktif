@@ -28,6 +28,12 @@ describe('CountStepper', () => {
     expect(onchange).toHaveBeenLastCalledWith(2);
   });
 
+  it('names the group once and hides the visual label from assistive tech', () => {
+    render(CountStepper, { props: { label: 'Jumlah potong', value: 3, min: 1, max: 12, onchange: vi.fn() } });
+    expect(screen.getByRole('group', { name: 'Jumlah potong' })).toBeInTheDocument();
+    expect(screen.getByText('Jumlah potong')).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('disables buttons at the limits and when disabled', () => {
     const { unmount } = render(CountStepper, { props: { label: 'Jumlah potong', value: 1, min: 1, max: 1, onchange: vi.fn() } });
     expect(screen.getByRole('button', { name: 'Kurangi jumlah potong' })).toBeDisabled();

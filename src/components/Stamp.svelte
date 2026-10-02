@@ -5,7 +5,7 @@
   let { text, score, caption }: { text: string; score: number; caption: string } = $props();
 </script>
 
-<div class="stamp-area" role="img" aria-label={`Stempel ${text} Nilai ${score}`}>
+<div class="stamp-area" role="img" aria-label={`Stempel ${text} Nilai ${score}. ${caption}`}>
   <div class="stamp" in:scale={{ start: 1.5, duration: prefersReducedMotion() ? 0 : 220 }}>
     <span class="small">DIPERIKSA</span>
     <span class="word">{text}</span>
@@ -41,9 +41,9 @@
     text-align: center;
   }
   .small {
-    font-size: 11px;
+    font-size: 14px;
     font-weight: 700;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.04em;
   }
   .word {
     font-family: var(--font-hand);

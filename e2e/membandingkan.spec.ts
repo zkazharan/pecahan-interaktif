@@ -107,3 +107,21 @@ test('no horizontal scroll on the module page', async ({ page }) => {
     expect(overflow).toBeLessThanOrEqual(0);
   }
 });
+
+test('slot labels stay clear of the cards placed in them', async ({ page }) => {
+  await page.goto('./#/membandingkan/latihan');
+  for (let i = 0; i < 4; i++) {
+    await expect(page.getByText(`Soal ${i + 1} dari 5`)).toBeVisible();
+    await solveCurrentTask(page);
+    const overlaps = await page.evaluate(() => {
+      const hit = (a: DOMRect, b: DOMRect) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
+      return [...document.querySelectorAll('[data-testid^="slot-"]')].filter((slot) => {
+        const label = slot.querySelector('.slot-label')!.getBoundingClientRect();
+        return [...slot.querySelectorAll('[data-card]')].some((card) => hit(label, card.getBoundingClientRect()));
+      }).length;
+    });
+    expect(overlaps).toBe(0);
+    await page.getByRole('button', { name: 'Cek jawaban' }).click();
+    await page.getByRole('button', { name: 'Soal berikutnya →' }).click();
+  }
+});

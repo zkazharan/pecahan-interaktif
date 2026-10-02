@@ -6,6 +6,7 @@ import {
   cutOf,
   dividerXs,
   hitBox,
+  labelMetrics,
   maxCut,
   MAX_PARTS,
   normalizeStacking,
@@ -201,5 +202,26 @@ describe('maxCut', () => {
     expect(maxCut(4)).toBe(6);
     expect(maxCut(5)).toBe(4);
     expect(maxCut(8)).toBe(3);
+  });
+});
+
+describe('labelMetrics', () => {
+  it('keeps the base size when the bar is wide', () => {
+    expect(labelMetrics(1000)).toEqual({ fontSize: 36, gapAbove: 8, gapBelow: 34, half: 24 });
+    expect(labelMetrics(1819).fontSize).toBe(36);
+    expect(labelMetrics(0).fontSize).toBe(36);
+  });
+
+  it('grows so the rendered label is at least 18 px on a phone', () => {
+    const phone = labelMetrics(332);
+    expect((phone.fontSize * 332) / BAR.viewWidth).toBeGreaterThanOrEqual(18);
+    expect(phone.gapBelow).toBeGreaterThan(34);
+    expect(phone.half).toBeGreaterThan(24);
+  });
+
+  it('stays inside the label column on very narrow bars', () => {
+    const tiny = labelMetrics(100);
+    expect(tiny.fontSize).toBeLessThanOrEqual(64);
+    expect(BAR.labelX + tiny.half).toBeLessThanOrEqual(BAR.viewWidth);
   });
 });

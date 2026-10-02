@@ -54,6 +54,23 @@ describe('Bar', () => {
     expect(onstack).toHaveBeenCalledWith({ pieceOf: 'a', onto: 'b' });
   });
 
+  it('announces how the stacked piece compares after a drop', async () => {
+    render(Bar, { props: { rows: ROWS, stacking: null, draggable: true, onstack: vi.fn() } });
+    const piece = screen.getByRole('button', { name: 'Potongan sepertiga' });
+    await fireEvent.keyDown(piece, { key: ' ' });
+    await fireEvent.keyDown(piece, { key: ' ' });
+    expect(screen.getByTestId('announcer')).toHaveTextContent('Potongan sepertiga ditaruh di atas pita seperempat, lebih panjang.');
+  });
+
+  it('announces a shorter piece too', async () => {
+    const onstack = vi.fn();
+    render(Bar, { props: { rows: ROWS, stacking: null, draggable: true, onstack } });
+    const piece = screen.getByRole('button', { name: 'Potongan seperempat' });
+    await fireEvent.keyDown(piece, { key: ' ' });
+    await fireEvent.keyDown(piece, { key: ' ' });
+    expect(screen.getByTestId('announcer')).toHaveTextContent('Potongan seperempat ditaruh di atas pita sepertiga, lebih pendek.');
+  });
+
   it('can send a stacked piece home', async () => {
     const onstack = vi.fn();
     render(Bar, { props: { rows: ROWS, stacking: { pieceOf: 'a', onto: 'b' }, draggable: true, onstack } });
@@ -62,6 +79,7 @@ describe('Bar', () => {
     expect(screen.getByTestId('announcer')).toHaveTextContent('Sekarang di pita sepertiga');
     await fireEvent.keyDown(piece, { key: ' ' });
     expect(onstack).toHaveBeenCalledWith(null);
+    expect(screen.getByTestId('announcer')).toHaveTextContent('Potongan sepertiga ditaruh di pita sepertiga.');
   });
 
   it('shows a ghost where the stacked piece came from and the note', () => {

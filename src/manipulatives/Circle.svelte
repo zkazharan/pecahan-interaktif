@@ -18,6 +18,7 @@
 
   let svg: SVGSVGElement | undefined = $state();
   let lastCount = 0;
+  let focused = $state(-1);
 
   $effect(() => {
     const count = slices.length;
@@ -58,6 +59,10 @@
         aria-label={`Potongan ${i + 1}`}
         onclick={() => onshade(i)}
         onkeydown={(event) => onKey(event, i)}
+        onfocus={() => (focused = i)}
+        onblur={() => {
+          if (focused === i) focused = -1;
+        }}
       />
     {:else}
       <path class="slice" data-slice={i} d={wedgePath(arc.start, arc.end)} style:fill={shaded[i] ? color : undefined} />
@@ -68,6 +73,9 @@
       <path class="outlined" data-outlined d={wedgePath(arc.start, arc.end)} />
     {/if}
   {/each}
+  {#if focused >= 0 && arcs[focused]}
+    <path class="focus-ring" data-focus-ring d={wedgePath(arcs[focused].start, arcs[focused].end)} />
+  {/if}
   {#each guidePoints(guides) as point, i (i)}
     <line class="guide" data-guide x1={CIRCLE.cx} y1={CIRCLE.cy} x2={point.x} y2={point.y} />
   {/each}
@@ -107,8 +115,17 @@
   }
   .toggle:focus-visible {
     outline: none;
+  }
+  .focus-ring {
+    display: none;
+    fill: none;
     stroke: var(--blue);
     stroke-width: 6;
+    stroke-linejoin: round;
+    pointer-events: none;
+  }
+  .circle:has(.toggle:focus-visible) .focus-ring {
+    display: inline;
   }
   .outlined {
     fill: none;

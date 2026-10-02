@@ -8,6 +8,7 @@
   import {
     BAR,
     barUnits,
+    labelMetrics,
     dividerXs,
     hitBox,
     normalizeStacking,
@@ -17,6 +18,7 @@
     piecePosition,
     rowY,
     shownValue,
+    stackNote,
     unitWidth,
     viewHeight,
     visibleTranslate,
@@ -46,18 +48,38 @@
 
   const units = $derived(barUnits(rows));
   const size = $derived({ width: svgWidth, height: svgHeight, rows: rows.length });
+  const label = $derived(labelMetrics(svgWidth));
 
   onMount(() => {
     fade.on = true;
   });
 
+  let stackMessage = '';
+
+  function spokenRow(row: BarRow, noun: string): string {
+    return row.hideLabel ? noun : `${noun} ${spokenFraction(shownValue(row))}`;
+  }
+
+  function stackAnnouncement(next: Stacking): string {
+    const comparison = stackNote(rows, next).replace(/!$/, '');
+    const piece = rows.find((row) => row.id === next?.pieceOf);
+    const onto = rows.find((row) => row.id === next?.onto);
+    return comparison && piece && onto ? `${spokenRow(piece, 'Potongan')} ditaruh di atas ${spokenRow(onto, 'pita')}, ${comparison}.` : '';
+  }
+
   const controller = new DragController({
-    announce,
+    announce: (message) => {
+      announce(stackMessage || message);
+      stackMessage = '';
+    },
     onDrop: ({ itemId, targetId }) => {
       const pieceId = itemId.slice(PIECE.length);
       const hadFocus = document.activeElement?.closest('[data-piece]')?.getAttribute('data-piece') === pieceId;
+      const next = normalizeStacking({ pieceOf: pieceId, onto: targetId });
+      stackMessage = stackAnnouncement(next);
+      queueMicrotask(() => (stackMessage = ''));
       instant = true;
-      onstack?.(normalizeStacking({ pieceOf: pieceId, onto: targetId }));
+      onstack?.(next);
       tick().then(() => (instant = false));
       if (hadFocus) {
         tick().then(() => {
@@ -149,9 +171,9 @@
       {/if}
       {#if !row.hideLabel}
         <g class="label" aria-hidden="true">
-          <text x={BAR.labelX} y={y + BAR.rowHeight / 2 - 8}>{shown.n}</text>
-          <line x1={BAR.labelX - 24} x2={BAR.labelX + 24} y1={y + BAR.rowHeight / 2} y2={y + BAR.rowHeight / 2} />
-          <text x={BAR.labelX} y={y + BAR.rowHeight / 2 + 34}>{shown.d}</text>
+          <text x={BAR.labelX} y={y + BAR.rowHeight / 2 - label.gapAbove} style:font-size={`${label.fontSize}px`}>{shown.n}</text>
+          <line x1={BAR.labelX - label.half} x2={BAR.labelX + label.half} y1={y + BAR.rowHeight / 2} y2={y + BAR.rowHeight / 2} />
+          <text x={BAR.labelX} y={y + BAR.rowHeight / 2 + label.gapBelow} style:font-size={`${label.fontSize}px`}>{shown.d}</text>
         </g>
       {/if}
     </g>
@@ -255,7 +277,8 @@
     opacity: 0.92;
   }
   .label text {
-    font: 700 36px var(--font-body);
+    font-family: var(--font-body);
+    font-weight: 700;
     fill: var(--ink);
     text-anchor: middle;
   }

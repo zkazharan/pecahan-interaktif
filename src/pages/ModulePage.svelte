@@ -53,7 +53,7 @@
     </div>
   </header>
 
-  <div class="body">
+  <main class="body">
     {#key resetKey}
       {#if tab === 'peraga'}
         <Peraga params={peragaParams} onparams={(p) => router.replaceParams(module.peraga.formatParams(p))} />
@@ -61,7 +61,7 @@
         <LatihanView latihan={module.latihan} slug={module.slug} number={entry?.number ?? 0} {next} />
       {/if}
     {/key}
-  </div>
+  </main>
 </div>
 
 <style>
