@@ -111,6 +111,47 @@ describe('Collection', () => {
     expect(document.querySelectorAll('[data-bag-count]')).toHaveLength(0);
   });
 
+  it('lets screen readers read the bag contents only when counts are on', () => {
+    const view = render(Collection, { props: { state: { bags: [5, 1], tray: 0 }, onmove: () => {}, counts: true } });
+    const bags = [screen.getByTestId(bagId(0)), screen.getByTestId(bagId(1))];
+    expect(bags.map((bag) => bag.textContent?.trim())).toEqual(['5 kelereng', '1 kelereng']);
+    expect(document.querySelector('[data-bag-count]')).toHaveAttribute('aria-hidden', 'true');
+    view.unmount();
+    const { container } = render(Collection, { props: { state: { bags: [5, 1], tray: 0 }, onmove: () => {} } });
+    expect(screen.getByTestId(bagId(0)).textContent?.trim()).toBe('');
+    expect(container).not.toHaveTextContent('kelereng');
+  });
+
+  it('describes take-mode bags with their contents and keeps the label', () => {
+    render(Collection, { props: { state: { bags: [5, 3], tray: 0 }, onmove: () => {}, locked: true, taken: [false, false], ontake: () => {}, counts: true } });
+    const first = screen.getByRole('button', { name: 'Kantong 1' });
+    expect(first).toHaveAccessibleDescription('5 kelereng');
+    expect(screen.getByRole('button', { name: 'Kantong 2' })).toHaveAccessibleDescription('3 kelereng');
+  });
+
+  it('does not describe take-mode bags without counts', () => {
+    render(Collection, { props: { state: { bags: [5, 3], tray: 0 }, onmove: () => {}, locked: true, taken: [false, false], ontake: () => {} } });
+    const first = screen.getByRole('button', { name: 'Kantong 1' });
+    expect(first).not.toHaveAttribute('aria-describedby');
+    expect(first).toHaveAccessibleDescription('');
+  });
+
+  it('shrinks the marbles in a bag holding more than 12', () => {
+    render(Collection, { props: { state: { bags: [12, 13], tray: 0 }, onmove: () => {} } });
+    expect(screen.getByTestId(bagId(0)).querySelector('.fill')).not.toHaveClass('crowded');
+    expect(screen.getByTestId(bagId(1)).querySelector('.fill')).toHaveClass('crowded');
+  });
+
+  it('fits as many bag columns as the width allows', () => {
+    const width = vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(350);
+    const view = render(Collection, { props: { state: { bags: [1, 1, 1, 1, 1], tray: 0 }, onmove: () => {} } });
+    const bags = view.container.querySelector<HTMLElement>('.bags');
+    expect(bags?.style.getPropertyValue('--cols')).toBe('3');
+    width.mockReturnValue(1000);
+    view.rerender({ state: { bags: [1, 1], tray: 0 } });
+    expect(bags?.style.getPropertyValue('--cols')).toBe('2');
+  });
+
   it('hides an empty tray when locked', () => {
     render(Collection, { props: { state: { bags: [2, 2], tray: 0 }, onmove: () => {}, locked: true } });
     expect(screen.queryByTestId('marble-tray')).toBeNull();

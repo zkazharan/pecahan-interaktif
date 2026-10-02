@@ -17,6 +17,7 @@
 
   let { state: placement, onmove, locked = false, taken = [], ontake, counts = false }: Props = $props();
 
+  const uid = $props.id();
   let root: HTMLElement | undefined = $state();
   let userMove = false;
 
@@ -76,26 +77,53 @@
     };
   }
 
+  const MIN_BAG = 88;
+  const CROWDED = 12;
+
+  function fitColumns(node: HTMLElement, bagCount: number) {
+    let total = bagCount;
+    function fit(): void {
+      const gap = parseFloat(getComputedStyle(node).columnGap) || 0;
+      const cols = Math.max(1, Math.min(total, Math.floor((node.clientWidth + gap) / (MIN_BAG + gap))));
+      node.style.setProperty('--cols', String(cols));
+    }
+    const observer = new ResizeObserver(fit);
+    observer.observe(node);
+    fit();
+    return {
+      update(next: number) {
+        total = next;
+        fit();
+      },
+      destroy() {
+        observer.disconnect();
+      },
+    };
+  }
+
   function bagAccepts(index: number): (itemId: string) => boolean {
     return (itemId) => marbleSource(itemId) !== bagId(index);
   }
 </script>
 
-{#snippet sack(count: number)}
+{#snippet sack(count: number, srId?: string)}
   <svg class="sack" viewBox="0 0 120 120" preserveAspectRatio="none" aria-hidden="true">
     <path class="cloth" d="M30 38 C14 54 10 84 18 100 C22 110 36 114 60 114 C84 114 98 110 102 100 C110 84 106 54 90 38 Z" />
     <path class="cloth" d="M44 12 L76 12 L90 38 L30 38 Z" />
     <path class="tie" d="M32 36 Q60 44 88 36" />
   </svg>
-  <span class="fill">
+  <span class="fill" class:crowded={count > CROWDED}>
     {#each Array.from({ length: count }, (_, k) => k) as k (k)}
       <span class="dot" data-marble></span>
     {/each}
   </span>
+  {#if counts}
+    <span class="sr-only" id={srId}>{count} kelereng</span>
+  {/if}
 {/snippet}
 
 <div class="collection" bind:this={root}>
-  <div class="bags" style:--n={placement.bags.length}>
+  <div class="bags" style:--n={placement.bags.length} use:fitColumns={placement.bags.length}>
     {#each placement.bags as count, i (i)}
       <div class="cell">
         {#if taking}
@@ -105,12 +133,13 @@
             class:taken={taken[i]}
             aria-pressed={taken[i] ?? false}
             aria-label={`Kantong ${i + 1}`}
+            aria-describedby={counts ? `${uid}-bag-${i}` : undefined}
             onclick={() => ontake?.(i)}
             data-container={bagId(i)}
             data-testid={bagId(i)}
             use:dropTarget={{ controller, id: bagId(i), label: `kantong ${i + 1}`, accepts: bagAccepts(i) }}
           >
-            {@render sack(count)}
+            {@render sack(count, `${uid}-bag-${i}`)}
           </button>
         {:else}
           <div
@@ -133,7 +162,7 @@
           </div>
         {/if}
         {#if counts}
-          <span class="count" data-bag-count>{count}</span>
+          <span class="count" data-bag-count aria-hidden="true">{count}</span>
         {/if}
       </div>
     {/each}
@@ -167,16 +196,18 @@
   }
   .bags {
     --cap: 220px;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(max(88px, calc((100% - (var(--n) - 1) * 0.5em) / var(--n) - 0.5px)), 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 0.5em;
     max-width: calc(var(--n) * var(--cap) + (var(--n) - 1) * 0.5em);
   }
   .cell {
-    width: 100%;
+    flex: 0 0 calc((100% - (var(--cols, 1) - 1) * 0.5em) / var(--cols, 1) - 0.5px);
+    min-width: 0;
     max-width: var(--cap);
-    justify-self: center;
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 0.25em;
     justify-items: center;
     align-content: start;
@@ -252,9 +283,16 @@
     border-radius: 50%;
     background: var(--frac-2);
   }
+  .collection {
+    --dot: 16px;
+  }
   .dot {
-    width: 16px;
-    height: 16px;
+    width: var(--dot);
+    height: var(--dot);
+  }
+  .crowded .dot {
+    width: calc(var(--dot) * 0.75);
+    height: calc(var(--dot) * 0.75);
   }
   .handle {
     position: absolute;
@@ -321,9 +359,8 @@
     }
   }
   @media (min-width: 600px) {
-    .dot {
-      width: 22px;
-      height: 22px;
+    .collection {
+      --dot: 22px;
     }
     .tray-marble {
       width: 56px;
@@ -338,9 +375,8 @@
     .bags {
       --cap: 300px;
     }
-    .dot {
-      width: 30px;
-      height: 30px;
+    .collection {
+      --dot: 30px;
     }
     .tray-marble {
       width: 72px;
