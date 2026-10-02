@@ -101,4 +101,9 @@
     padding: 0.6em 0.8em;
     border-left: 4px dashed var(--red);
   }
+  @media (min-width: 600px) {
+    .diff {
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    }
+  }
 </style>

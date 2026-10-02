@@ -18,3 +18,9 @@
 <div class="diff-bars" data-testid="diff-bars">
   <Bar {rows} {stacking} note={stackNote(rows, stacking)} />
 </div>
+
+<style>
+  .diff-bars {
+    max-width: 560px;
+  }
+</style>

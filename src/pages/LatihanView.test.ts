@@ -35,6 +35,7 @@ function rectAt(top: number, height: number): DOMRect {
 describe('LatihanView', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it('keeps Cek jawaban disabled until the task is answered', () => {
@@ -153,48 +154,58 @@ describe('LatihanView', () => {
     expect(screen.getByText('Coba lagi ya.')).toBeInTheDocument();
   });
 
-  it('scrolls the feedback into view when the action bar covers it after a wrong check', async () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
+  function layout(rects: { actions?: DOMRect; feedback?: DOMRect; diff?: DOMRect }) {
     vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      if (this.classList.contains('actions')) return rectAt(700, 100);
-      if (this.classList.contains('feedback')) return rectAt(690, 30);
+      if (this.classList.contains('actions')) return rects.actions ?? rectAt(700, 100);
+      if (this.classList.contains('feedback')) return rects.feedback ?? rectAt(500, 30);
+      if (this.dataset.testid === 'diff') return rects.diff ?? rectAt(0, 10);
       return rectAt(0, 10);
     });
-    const { user } = setup();
+    return vi.spyOn(window, 'scrollBy').mockImplementation(() => {});
+  }
+
+  async function checkWrong(user: ReturnType<typeof userEvent.setup>) {
     await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
     await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
-    expect(scroll).toHaveBeenCalledWith({ block: 'nearest', behavior: expect.any(String) });
+  }
+
+  it('scrolls the feedback clear of the action bar after a wrong check', async () => {
+    const scroll = layout({ feedback: rectAt(690, 30), diff: rectAt(300, 10) });
+    const { user } = setup();
+    await checkWrong(user);
+    expect(scroll).toHaveBeenCalledWith({ top: 720 - (700 - 8), behavior: expect.any(String) });
   });
 
   it('does not scroll when the feedback is already above the action bar', async () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      if (this.classList.contains('actions')) return rectAt(700, 100);
-      if (this.classList.contains('feedback')) return rectAt(500, 30);
-      return rectAt(0, 10);
-    });
+    const scroll = layout({ feedback: rectAt(500, 30), diff: rectAt(300, 10) });
     const { user } = setup();
-    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
-    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    await checkWrong(user);
     expect(scroll).not.toHaveBeenCalled();
   });
 
-  it('scrolls instantly under reduced motion', async () => {
-    const scroll = vi.fn();
-    Element.prototype.scrollIntoView = scroll;
-    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce'), media: query, addEventListener() {}, removeEventListener() {} }));
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      if (this.classList.contains('actions')) return rectAt(700, 100);
-      if (this.classList.contains('feedback')) return rectAt(690, 30);
-      return rectAt(0, 10);
-    });
+  it('never scrolls the top of the diff above the viewport', async () => {
+    const scroll = layout({ feedback: rectAt(1400, 30), diff: rectAt(50, 1300) });
     const { user } = setup();
-    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await checkWrong(user);
+    expect(scroll).toHaveBeenCalledTimes(1);
+    expect(scroll).toHaveBeenCalledWith({ top: 50, behavior: expect.any(String) });
+  });
+
+  it('scrolls instantly under reduced motion', async () => {
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce'), media: query, addEventListener() {}, removeEventListener() {} }));
+    const scroll = layout({ feedback: rectAt(690, 30), diff: rectAt(300, 10) });
+    const { user } = setup();
+    await checkWrong(user);
+    expect(scroll).toHaveBeenCalledWith({ top: 28, behavior: 'auto' });
+  });
+
+  it('shows Betul! and does not scroll after a correct check', async () => {
+    const scroll = layout({ feedback: rectAt(690, 30) });
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab benar' }));
     await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
-    expect(scroll).toHaveBeenCalledWith({ block: 'nearest', behavior: 'auto' });
-    vi.unstubAllGlobals();
+    expect(screen.getByText('Betul!')).toBeInTheDocument();
+    expect(scroll).not.toHaveBeenCalled();
   });
 
   it('moves focus to the next button once the answer is correct', async () => {

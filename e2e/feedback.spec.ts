@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { dragTo } from './helpers';
+import { dragTo, solveCurrentTask } from './helpers';
 
 test('module 1: a wrong sort shows the equal-cut guides until the answer changes', async ({ page }) => {
   await page.goto('./#/membagi-adil/latihan');
@@ -54,4 +54,41 @@ test('module 8: an uneven split shows the count in each bag', async ({ page }) =
   for (let i = 0; i < total; i++) await dragTo(page, page.locator('[data-tray-marble]').first(), page.getByTestId('bag-0'));
   await page.getByRole('button', { name: 'Cek jawaban' }).click();
   await expect(page.locator('[data-bag-count]').first()).toHaveText(String(total));
+});
+
+test('module 4: a wrong pair keeps the diff top on screen and clear of the action bar', async ({ page }) => {
+  await page.goto('./#/senilai/latihan');
+  await solveCurrentTask(page);
+  await page.getByRole('button', { name: 'Cek jawaban' }).click();
+  await page.getByRole('button', { name: 'Soal berikutnya →' }).click();
+  const task = page.locator('[data-task-kind="pair"]');
+  await expect(task).toBeVisible();
+  const solution = JSON.parse((await task.getAttribute('data-solution')) ?? '{}') as Record<string, string>;
+  const slots = Object.keys(solution);
+  for (const [i, slot] of slots.entries()) {
+    await dragTo(page, page.locator(`[data-card="${solution[slots[(i + 1) % slots.length]]}"]`), page.getByTestId(`slot-${slot}`));
+  }
+  await page.getByRole('button', { name: 'Cek jawaban' }).click();
+  const diff = page.getByTestId('diff').first();
+  await expect(diff).toBeVisible();
+  await expect(page.getByTestId('diff-bars')).toHaveCount(3);
+  await page.waitForTimeout(600);
+  const state = await page.evaluate(() => {
+    const first = document.querySelector('[data-testid="diff"]')!.getBoundingClientRect();
+    const firstBars = document.querySelector('[data-testid="diff-bars"]') as HTMLElement;
+    const box = firstBars.getBoundingClientRect();
+    const bar = document.querySelector('.actions')!.getBoundingClientRect();
+    const y = Math.min(Math.max(box.top, 0) + 12, bar.top - 4);
+    const hit = document.elementFromPoint(box.x + box.width / 2, y);
+    const slotsBottom = document.querySelector('[data-testid^="slot-"]')!.getBoundingClientRect().bottom;
+    return {
+      diffTop: first.top,
+      slotsBottom,
+      barTop: bar.top,
+      covered: !hit || !firstBars.contains(hit),
+    };
+  });
+  expect(state.diffTop).toBeGreaterThanOrEqual(0);
+  expect(state.diffTop < state.barTop || state.slotsBottom > 0).toBe(true);
+  expect(state.covered).toBe(false);
 });

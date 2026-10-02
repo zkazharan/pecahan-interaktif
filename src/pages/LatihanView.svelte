@@ -21,6 +21,8 @@
   import { prefersReducedMotion } from '../lib/motion';
   import { createRng, randomSeed } from '../lib/random';
 
+  const REVEAL_GAP = 8;
+
   type Props = {
     latihan: LatihanDef<T, A>;
     slug: string;
@@ -41,7 +43,6 @@
   let primary = $state<HTMLButtonElement | null>(null);
   let root = $state<HTMLElement | null>(null);
   let bar = $state<HTMLElement | null>(null);
-  let barHeight = $state(0);
 
   const task = $derived(tasks[flow.index]);
   const firstTry = $derived(firstTryCount(flow.outcomes));
@@ -61,13 +62,14 @@
   async function revealFeedback(): Promise<void> {
     await tick();
     if (!root || !bar) return;
-    const barTop = bar.getBoundingClientRect().top;
-    const targets = root.querySelectorAll<HTMLElement>('[data-testid="diff"], .feedback');
-    for (const target of targets) {
-      if (target.getBoundingClientRect().bottom <= barTop) continue;
-      target.style.scrollMarginBottom = `${bar.getBoundingClientRect().height + 8}px`;
-      target.scrollIntoView({ block: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
-    }
+    const limit = bar.getBoundingClientRect().top - REVEAL_GAP;
+    const targets = [...root.querySelectorAll<HTMLElement>('[data-testid="diff"], .feedback')];
+    const bottom = Math.max(...targets.map((target) => target.getBoundingClientRect().bottom));
+    const firstDiff = root.querySelector<HTMLElement>('[data-testid="diff"]');
+    const room = firstDiff ? firstDiff.getBoundingClientRect().top : Infinity;
+    const delta = Math.min(bottom - limit, room);
+    if (!Number.isFinite(delta) || delta <= 0) return;
+    window.scrollBy({ top: delta, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
   }
 
   function check(): void {
@@ -104,7 +106,7 @@
   }
 </script>
 
-<section class="latihan" style:padding-bottom={flow.status === 'done' ? undefined : `${barHeight}px`} bind:this={root}>
+<section class="latihan" bind:this={root}>
   <TaskChecks outcomes={flow.outcomes} total={TASKS_PER_LATIHAN} />
 
   {#if flow.status === 'done'}
@@ -135,7 +137,7 @@
         <HandNote color="blue">Betul!</HandNote>
       {/if}
     </p>
-    <div class="actions" bind:this={bar} bind:offsetHeight={barHeight}>
+    <div class="actions" bind:this={bar}>
       {#if settled}
         <button type="button" class="btn primary" bind:this={primary} onclick={advance}>
           {flow.index + 1 === TASKS_PER_LATIHAN ? 'Lihat hasil' : 'Soal berikutnya →'}

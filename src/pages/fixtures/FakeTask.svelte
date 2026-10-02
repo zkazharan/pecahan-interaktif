@@ -9,3 +9,4 @@
 <button type="button" onclick={() => onanswer(-1)}>Jawab salah</button>
 <button type="button" onclick={() => onanswer(-2)}>Jawab salah lain</button>
 <button type="button" onclick={() => onanswer(answer === null ? null : answer - 100)}>Ubah bantuan</button>
+{#if diff}<div data-testid="diff"></div>{/if}
