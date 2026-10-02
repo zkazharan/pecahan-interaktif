@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { CATALOG } from '../content/catalog';
   import { stampText } from '../content/latihan';
   import { findModule } from '../content/registry';
@@ -11,6 +11,8 @@
   let records = $state(untrack(() => store.all()));
   let confirming = $state(false);
   const hasStamps = $derived(Object.keys(records).length > 0);
+
+  onMount(() => store.subscribe(() => (records = store.all())));
 
   function clearAll(): void {
     store.clear();

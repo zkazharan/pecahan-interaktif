@@ -3,13 +3,13 @@
 </script>
 
 <div class="step-nav">
-  <button type="button" class="btn" disabled={step === 0} onclick={() => onstep(step - 1)}>← Sebelumnya</button>
+  <button type="button" class="btn" disabled={step <= 0} onclick={() => onstep(step - 1)}>← Sebelumnya</button>
   <ol class="dots" aria-label={`Langkah ${step + 1} dari ${total}`}>
     {#each Array.from({ length: total }, (_, i) => i) as i (i)}
       <li class:done={i <= step}></li>
     {/each}
   </ol>
-  <button type="button" class="btn primary" disabled={step === total - 1} onclick={() => onstep(step + 1)}>Lanjut →</button>
+  <button type="button" class="btn primary" disabled={step >= total - 1} onclick={() => onstep(step + 1)}>Lanjut →</button>
 </div>
 
 <style>

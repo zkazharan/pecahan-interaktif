@@ -28,6 +28,19 @@ describe('parseHash', () => {
     expect(parseHash('#/membandingkan/apa')).toMatchObject({ tab: 'peraga' });
   });
 
+  it('splits path from query on the first question mark only', () => {
+    expect(parseHash('#/a/peraga?x=1?y')).toMatchObject({ slug: 'a', tab: 'peraga', params: { x: '1?y' } });
+  });
+
+  it('keeps a __proto__ key as plain data', () => {
+    const route = parseHash('#/a/peraga?__proto__=1&b=2');
+    if (route.name !== 'module') throw new Error('expected module route');
+    expect(Object.getPrototypeOf(route.params)).toBeNull();
+    expect(Object.keys(route.params)).toEqual(['__proto__', 'b']);
+    expect(route.params['__proto__']).toBe('1');
+    expect(({} as Record<string, unknown>).b).toBeUndefined();
+  });
+
   it('sends malformed slugs home', () => {
     expect(parseHash('#/Bad Slug/peraga')).toEqual({ name: 'home' });
     expect(parseHash('#/../peraga')).toEqual({ name: 'home' });
@@ -44,6 +57,12 @@ describe('formatHash', () => {
   it('omits the query when there are no params', () => {
     expect(formatHash({ name: 'module', slug: 'membandingkan', tab: 'latihan', params: {} })).toBe('#/membandingkan/latihan');
     expect(formatHash({ name: 'home' })).toBe('#/');
+  });
+
+  it('throws RangeError for a slug that does not match the slug pattern', () => {
+    for (const slug of ['Bad Slug', '', 'a/b', '../x', 'A']) {
+      expect(() => formatHash({ name: 'module', slug, tab: 'peraga', params: {} })).toThrow(RangeError);
+    }
   });
 
   it('round-trips through parseHash', () => {

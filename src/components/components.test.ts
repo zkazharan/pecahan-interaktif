@@ -33,6 +33,22 @@ describe('StepNav', () => {
     render(StepNav, { props: { step: 3, total: 4, onstep: vi.fn() } });
     expect(screen.getByRole('button', { name: 'Lanjut →' })).toBeDisabled();
   });
+
+  it('disables Lanjut when step is past the last one', () => {
+    render(StepNav, { props: { step: 7, total: 4, onstep: vi.fn() } });
+    expect(screen.getByRole('button', { name: 'Lanjut →' })).toBeDisabled();
+  });
+
+  it('disables Sebelumnya when step is below the first one', () => {
+    render(StepNav, { props: { step: -2, total: 4, onstep: vi.fn() } });
+    expect(screen.getByRole('button', { name: '← Sebelumnya' })).toBeDisabled();
+  });
+
+  it('disables both buttons when there are no steps', () => {
+    render(StepNav, { props: { step: 0, total: 0, onstep: vi.fn() } });
+    expect(screen.getByRole('button', { name: 'Lanjut →' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '← Sebelumnya' })).toBeDisabled();
+  });
 });
 
 describe('FractionStepper', () => {

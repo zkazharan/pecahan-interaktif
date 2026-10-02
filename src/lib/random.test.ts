@@ -28,6 +28,17 @@ describe('createRng', () => {
     expect(() => createRng(1).int(5, 4)).toThrow(RangeError);
   });
 
+  it('int rejects non-integer, NaN and infinite bounds', () => {
+    const rng = createRng(1);
+    for (const [min, max] of [[1.5, 3], [1, 3.5], [NaN, 3], [1, NaN], [0, Infinity], [-Infinity, 0]]) {
+      expect(() => rng.int(min, max)).toThrow(RangeError);
+    }
+  });
+
+  it('int allows min equal to max', () => {
+    expect(createRng(1).int(4, 4)).toBe(4);
+  });
+
   it('shuffle returns a permutation without touching the input', () => {
     const input = [1, 2, 3, 4, 5];
     const out = createRng(9).shuffle(input);

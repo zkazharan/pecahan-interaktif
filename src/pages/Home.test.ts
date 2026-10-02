@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/svelte';
+import { act, render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { MODULES } from '../content/registry';
-import { createProgressStore } from '../lib/progress';
+import { PROGRESS_KEY, createProgressStore, type StorageLike } from '../lib/progress';
 import Home from './Home.svelte';
 
 describe('Home', () => {
@@ -30,5 +30,25 @@ describe('Home', () => {
   it('hides the clear button when there are no stamps', () => {
     render(Home, { props: { store: createProgressStore(null) } });
     expect(screen.queryByRole('button', { name: 'Hapus semua stempel' })).toBeNull();
+  });
+
+  it('picks up a stamp saved from another tab', async () => {
+    const data: Record<string, string> = {};
+    const storage: StorageLike = {
+      getItem: (key) => data[key] ?? null,
+      setItem: (key, value) => {
+        data[key] = value;
+      },
+      removeItem: (key) => {
+        delete data[key];
+      },
+    };
+    render(Home, { props: { store: createProgressStore(storage) } });
+    expect(screen.queryByRole('img', { name: 'Stempel: Hebat!' })).toBeNull();
+    createProgressStore(storage).record('membandingkan', 5);
+    await act(() => {
+      window.dispatchEvent(new StorageEvent('storage', { key: PROGRESS_KEY }));
+    });
+    expect(screen.getByRole('img', { name: 'Stempel: Hebat!' })).toBeInTheDocument();
   });
 });

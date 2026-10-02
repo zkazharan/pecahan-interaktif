@@ -12,6 +12,8 @@ export function terbilang(x: number): string {
 }
 
 export function spokenFraction(f: Fraction): string {
+  if (f.n === 0) return terbilang(0);
+  if (f.d === 1) return terbilang(f.n);
   if (f.n === 1 && f.d === 2) return 'setengah';
   const denominator = terbilang(f.d);
   if (f.n === 1) return `seper${denominator}`;

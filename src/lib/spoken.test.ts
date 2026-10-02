@@ -31,6 +31,15 @@ describe('spokenFraction', () => {
     expect(spokenFraction(frac(1, 12))).toBe('seperdua belas');
     expect(spokenFraction(frac(5, 24))).toBe('lima perdua puluh empat');
   });
+
+  it('reads whole-valued and zero fractions as plain numbers', () => {
+    expect(spokenFraction(frac(1, 1))).toBe('satu');
+    expect(spokenFraction(frac(3, 1))).toBe('tiga');
+    expect(spokenFraction(frac(12, 1))).toBe('dua belas');
+    expect(spokenFraction(frac(0, 5))).toBe('nol');
+    expect(spokenFraction(frac(0, 1))).toBe('nol');
+    expect(spokenFraction(frac(0, 2))).toBe('nol');
+  });
 });
 
 describe('spokenMixed', () => {
@@ -42,5 +51,12 @@ describe('spokenMixed', () => {
   it('drops an empty part', () => {
     expect(spokenMixed(3, frac(0, 4))).toBe('tiga');
     expect(spokenMixed(0, frac(1, 2))).toBe('setengah');
+    expect(spokenMixed(0, frac(0, 3))).toBe('nol');
+    expect(spokenMixed(2, frac(0, 1))).toBe('dua');
+  });
+
+  it('agrees with spokenFraction when there is no whole part', () => {
+    expect(spokenMixed(0, frac(1, 1))).toBe(spokenFraction(frac(1, 1)));
+    expect(spokenMixed(0, frac(5, 1))).toBe('lima');
   });
 });

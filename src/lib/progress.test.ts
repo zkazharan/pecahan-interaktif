@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { PROGRESS_KEY, createProgressStore, type StorageLike } from './progress';
+import { describe, expect, it, vi } from 'vitest';
+import { MAX_FIRST_TRY, PROGRESS_KEY, createProgressStore, type StorageLike } from './progress';
 
 function memoryStorage(initial: Record<string, string> = {}) {
   const data: Record<string, string> = { ...initial };
@@ -106,5 +106,96 @@ describe('createProgressStore', () => {
     const snapshot = store.all();
     delete snapshot.membandingkan;
     expect(store.all().membandingkan).toBeDefined();
+  });
+
+  it('record() returns a copy', () => {
+    const store = createProgressStore(null);
+    const entry = store.record('membandingkan', 3, NOW);
+    entry.bestFirstTry = 0;
+    expect(store.all().membandingkan.bestFirstTry).toBe(3);
+  });
+
+  it('all() entries are copies too', () => {
+    const store = createProgressStore(null);
+    store.record('membandingkan', 3, NOW);
+    store.all().membandingkan.bestFirstTry = 0;
+    expect(store.all().membandingkan.bestFirstTry).toBe(3);
+  });
+
+  it('defines the 0..5 bound once', () => {
+    expect(MAX_FIRST_TRY).toBe(5);
+    const store = createProgressStore(null);
+    expect(store.record('membandingkan', MAX_FIRST_TRY, NOW).bestFirstTry).toBe(5);
+    expect(() => store.record('membandingkan', MAX_FIRST_TRY + 1)).toThrow(RangeError);
+    const raw = JSON.stringify({ a: { bestFirstTry: MAX_FIRST_TRY + 1, completedAt: 'x' } });
+    expect(createProgressStore(memoryStorage({ [PROGRESS_KEY]: raw }).storage).all()).toEqual({});
+  });
+
+  it('keeps both modules when two stores share one storage', () => {
+    const { storage, data } = memoryStorage();
+    const first = createProgressStore(storage);
+    const second = createProgressStore(storage);
+    first.record('membandingkan', 4, NOW);
+    second.record('senilai', 2, LATER);
+    expect(Object.keys(JSON.parse(data[PROGRESS_KEY])).sort()).toEqual(['membandingkan', 'senilai']);
+    expect(createProgressStore(storage).all().membandingkan.bestFirstTry).toBe(4);
+    expect(createProgressStore(storage).all().senilai.bestFirstTry).toBe(2);
+  });
+
+  it('does not lower a best score another store already saved', () => {
+    const { storage } = memoryStorage();
+    const first = createProgressStore(storage);
+    const second = createProgressStore(storage);
+    first.record('membandingkan', 5, NOW);
+    expect(second.record('membandingkan', 2, LATER)).toEqual({ bestFirstTry: 5, completedAt: LATER.toISOString() });
+  });
+
+  it('keeps data in memory when the write throws', () => {
+    const { storage } = memoryStorage();
+    const full: StorageLike = {
+      ...storage,
+      setItem: () => {
+        throw new DOMException('full', 'QuotaExceededError');
+      },
+    };
+    const store = createProgressStore(full);
+    expect(() => store.record('membandingkan', 3, NOW)).not.toThrow();
+    expect(() => store.record('senilai', 1, NOW)).not.toThrow();
+    expect(Object.keys(store.all()).sort()).toEqual(['membandingkan', 'senilai']);
+  });
+
+  it('notifies subscribers when another tab changes the stored progress', () => {
+    const { storage } = memoryStorage();
+    const home = createProgressStore(storage);
+    const other = createProgressStore(storage);
+    const listener = vi.fn();
+    const unsubscribe = home.subscribe(listener);
+    other.record('senilai', 3, NOW);
+    window.dispatchEvent(new StorageEvent('storage', { key: PROGRESS_KEY }));
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(home.all().senilai.bestFirstTry).toBe(3);
+    unsubscribe();
+    window.dispatchEvent(new StorageEvent('storage', { key: PROGRESS_KEY }));
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores storage events for other keys', () => {
+    const home = createProgressStore(memoryStorage().storage);
+    const listener = vi.fn();
+    const unsubscribe = home.subscribe(listener);
+    window.dispatchEvent(new StorageEvent('storage', { key: 'something-else' }));
+    expect(listener).not.toHaveBeenCalled();
+    unsubscribe();
+  });
+
+  it('empties after another tab clears the storage', () => {
+    const { storage } = memoryStorage();
+    const home = createProgressStore(storage);
+    home.record('senilai', 3, NOW);
+    const unsubscribe = home.subscribe(() => {});
+    createProgressStore(storage).clear();
+    window.dispatchEvent(new StorageEvent('storage', { key: PROGRESS_KEY }));
+    expect(home.all()).toEqual({});
+    unsubscribe();
   });
 });

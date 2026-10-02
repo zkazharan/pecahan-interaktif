@@ -17,6 +17,7 @@ export function createRng(seed: number): Rng {
   }
 
   function int(min: number, max: number): number {
+    if (!Number.isInteger(min) || !Number.isInteger(max)) throw new RangeError(`bounds must be integers: ${min}..${max}`);
     if (max < min) throw new RangeError(`empty range: ${min}..${max}`);
     return min + Math.floor(next() * (max - min + 1));
   }
