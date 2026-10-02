@@ -167,6 +167,26 @@ describe('notePlacement', () => {
   });
 });
 
+describe('notePlacement top row', () => {
+  const NOTE = 'lebih panjang!';
+
+  it('keeps the note inside the svg when the piece sits on the top row', () => {
+    const rows: BarRow[] = [ROWS[1], ROWS[0]];
+    const position = piecePosition(rows, 'a', { pieceOf: 'a', onto: 'b' });
+    expect(position.y).toBeLessThan(BAR.top);
+    for (const size of [42, 72]) {
+      const charWidth = (22 * size) / 42;
+      expect(notePlacement(position, pieceWidth(frac(1, 3)), NOTE, charWidth).y).toBeGreaterThanOrEqual(size * 0.8);
+      expect(notePlacement(position, 780, NOTE, charWidth).y).toBeGreaterThanOrEqual(size * 0.8);
+    }
+  });
+
+  it('leaves the note where it was when there is room above', () => {
+    const position = piecePosition(ROWS, 'a', { pieceOf: 'a', onto: 'b' });
+    expect(notePlacement(position, pieceWidth(frac(1, 3)), NOTE).y).toBe(position.y + 4);
+  });
+});
+
 describe('re-cut and wholes', () => {
   const third: BarRow = { id: 'a', value: frac(1, 3), color: 'x' };
 

@@ -169,6 +169,7 @@ const NOTE_BASE_SIZE = 42;
 const NOTE_MIN_PX = 18;
 const NOTE_MAX_SIZE = 72;
 const NOTE_CHAR_WIDTH = 22;
+const NOTE_ASCENT = 0.8;
 
 export function noteMetrics(renderedWidth: number): { fontSize: number; charWidth: number } {
   const wanted = renderedWidth > 0 ? Math.ceil((NOTE_MIN_PX * BAR.viewWidth) / renderedWidth) + 1 : NOTE_BASE_SIZE;
@@ -184,6 +185,8 @@ export function notePlacement(
   minX = 0,
 ): { x: number; y: number; anchor: 'start' | 'end' } {
   const after = Math.max(position.x + pieceW + 18, minX);
-  if (after + note.length * charWidth <= BAR.labelX - 30) return { x: after, y: position.y + 4, anchor: 'start' };
-  return { x: position.x + pieceW - 14, y: position.y + BAR.rowHeight / 2 + (14 * charWidth) / NOTE_CHAR_WIDTH, anchor: 'end' };
+  const floor = (NOTE_BASE_SIZE * charWidth * NOTE_ASCENT) / NOTE_CHAR_WIDTH;
+  if (after + note.length * charWidth <= BAR.labelX - 30) return { x: after, y: Math.max(position.y + 4, floor), anchor: 'start' };
+  const y = position.y + BAR.rowHeight / 2 + (14 * charWidth) / NOTE_CHAR_WIDTH;
+  return { x: position.x + pieceW - 14, y: Math.max(y, floor), anchor: 'end' };
 }
