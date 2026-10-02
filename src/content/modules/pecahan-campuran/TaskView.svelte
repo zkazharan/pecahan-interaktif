@@ -54,7 +54,7 @@
         <div class="aid">
           <Plates capacity={task.value.d} state={aidPlates} onmove={() => {}} locked />
         </div>
-      {:else}
+      {:else if feedback !== 'correct'}
         <button type="button" class="aid-toggle" onclick={() => (aidOpen = true)}>bingung? lihat piringnya ↓</button>
       {/if}
     {/if}

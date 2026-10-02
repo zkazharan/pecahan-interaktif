@@ -11,7 +11,7 @@ function setup(f = frac(5, 4)) {
 }
 
 const next = () => screen.getByRole('button', { name: 'Lanjut →' });
-const trayCount = () => screen.getByTestId('tray').querySelectorAll('[data-tray-piece]').length;
+const trayCount = () => screen.queryByTestId('tray')?.querySelectorAll('[data-tray-piece]').length ?? 0;
 
 describe('pecahan-campuran Peraga', () => {
   it('groups five quarters into one whole and one quarter', async () => {

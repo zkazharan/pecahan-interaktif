@@ -56,6 +56,16 @@ describe('pecahan-campuran TaskView', () => {
       expect(screen.queryByRole('button', { name: 'bingung? lihat piringnya ↓' })).toBeNull();
     });
 
+    it('drops the toggle once the answer is correct', () => {
+      show('correct');
+      expect(screen.queryByRole('button', { name: 'bingung? lihat piringnya ↓' })).toBeNull();
+    });
+
+    it('shows the locked aid without an empty tray', () => {
+      const { container } = show('shown');
+      expect(container.querySelector('[data-testid="tray"]')).toBeNull();
+    });
+
     it.each(['wrong', 'shown'] as const)('opens by itself on %s feedback', (feedback) => {
       const { container } = show(feedback);
       expect(container.querySelector('[data-plate-piece]')).not.toBeNull();

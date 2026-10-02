@@ -11,7 +11,7 @@
 
 <ol class="checks" aria-label="Kemajuan soal">
   {#each Array.from({ length: total }, (_, i) => outcomes[i]) as outcome, i (i)}
-    <li class={outcome ?? 'todo'} aria-label={`Soal ${i + 1}: ${describe(outcome)}`}>{outcome === undefined ? '○' : '✓'}</li>
+    <li class={outcome ?? 'todo'} aria-label={`Soal ${i + 1}: ${describe(outcome)}`}>{outcome === undefined ? '○' : outcome === 'shown' ? '~' : '✓'}</li>
   {/each}
 </ol>
 
@@ -32,7 +32,16 @@
     color: var(--blue);
   }
   .shown {
-    color: var(--pencil);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 1.05em;
+    height: 1.05em;
+    border: 2px dashed var(--ink-soft);
+    border-radius: 50%;
+    color: var(--ink-soft);
+    font-size: 0.9em;
   }
   .todo {
     color: var(--ink-soft);

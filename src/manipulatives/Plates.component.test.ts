@@ -84,6 +84,26 @@ describe('Plates', () => {
     for (const piece of screen.getAllByRole('button')) expect(piece).toHaveAttribute('aria-disabled', 'true');
   });
 
+  it('hides the empty tray when locked', () => {
+    render(Plates, { props: { capacity: 2, state: { plates: [2], tray: 0 }, onmove: vi.fn(), locked: true } });
+    expect(screen.queryByTestId('tray')).toBeNull();
+  });
+
+  it('keeps the tray while locked if it still holds pieces', () => {
+    render(Plates, { props: { capacity: 2, state: { plates: [1], tray: 1 }, onmove: vi.fn(), locked: true } });
+    expect(screen.getByTestId('tray')).toBeInTheDocument();
+  });
+
+  it('keeps the empty tray as a drop zone while unlocked', () => {
+    render(Plates, { props: { capacity: 2, state: { plates: [2], tray: 0 }, onmove: vi.fn() } });
+    expect(screen.getByTestId('tray')).toBeInTheDocument();
+  });
+
+  it('marks the root so locked pieces get the default cursor', () => {
+    const { container } = render(Plates, { props: { capacity: 2, state: { plates: [1], tray: 1 }, onmove: vi.fn(), locked: true } });
+    expect(container.querySelector('.plates')).toHaveAttribute('data-locked');
+  });
+
   it('pops in pieces the program puts on a plate', async () => {
     const animate = vi.spyOn(Element.prototype, 'animate');
     const view = render(Plates, { props: { capacity: 4, state: { plates: [0, 0], tray: 5 }, onmove: vi.fn() } });

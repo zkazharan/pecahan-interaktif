@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/svelte';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LatihanDef } from '../content/types';
 import { createProgressStore } from '../lib/progress';
 import FakeTask from './fixtures/FakeTask.svelte';
@@ -28,7 +28,15 @@ async function answerRight(user: ReturnType<typeof userEvent.setup>, last: boole
   await user.click(screen.getByRole('button', { name: last ? 'Lihat hasil' : 'Soal berikutnya →' }));
 }
 
+function rectAt(top: number, height: number): DOMRect {
+  return { top, bottom: top + height, height, left: 0, right: 100, width: 100, x: 0, y: top, toJSON: () => ({}) } as DOMRect;
+}
+
 describe('LatihanView', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('keeps Cek jawaban disabled until the task is answered', () => {
     setup();
     expect(screen.getByRole('button', { name: 'Cek jawaban' })).toBeDisabled();
@@ -118,6 +126,75 @@ describe('LatihanView', () => {
     await user.click(screen.getByRole('button', { name: 'Jawab salah lain' }));
     expect(screen.getByRole('button', { name: 'Cek jawaban' })).toBeDisabled();
     expect(screen.getByText(/Beda ya/)).toBeInTheDocument();
+  });
+
+  it('shows the hint only while the checked answer is unchanged', async () => {
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    expect(screen.getByText('Coba lagi ya.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah lain' }));
+    expect(screen.queryByText('Coba lagi ya.')).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    expect(screen.getByText('Coba lagi ya.')).toBeInTheDocument();
+  });
+
+  it('keeps the hint when only a non-graded part of the answer changes', async () => {
+    const graded: LatihanDef<{ target: number }, number | null> = {
+      ...fake,
+      graded: (answer) => (answer === null ? null : ((answer % 100) + 100) % 100),
+    };
+    const store = createProgressStore(null);
+    render(LatihanView, { props: { latihan: graded as LatihanDef<unknown, unknown>, slug: 'contoh', number: 3, seed: 1, store } });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    await user.click(screen.getByRole('button', { name: 'Ubah bantuan' }));
+    expect(screen.getByText('Coba lagi ya.')).toBeInTheDocument();
+  });
+
+  it('scrolls the feedback into view when the action bar covers it after a wrong check', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('actions')) return rectAt(700, 100);
+      if (this.classList.contains('feedback')) return rectAt(690, 30);
+      return rectAt(0, 10);
+    });
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    expect(scroll).toHaveBeenCalledWith({ block: 'nearest', behavior: expect.any(String) });
+  });
+
+  it('does not scroll when the feedback is already above the action bar', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('actions')) return rectAt(700, 100);
+      if (this.classList.contains('feedback')) return rectAt(500, 30);
+      return rectAt(0, 10);
+    });
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    expect(scroll).not.toHaveBeenCalled();
+  });
+
+  it('scrolls instantly under reduced motion', async () => {
+    const scroll = vi.fn();
+    Element.prototype.scrollIntoView = scroll;
+    vi.stubGlobal('matchMedia', (query: string) => ({ matches: query.includes('reduce'), media: query, addEventListener() {}, removeEventListener() {} }));
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      if (this.classList.contains('actions')) return rectAt(700, 100);
+      if (this.classList.contains('feedback')) return rectAt(690, 30);
+      return rectAt(0, 10);
+    });
+    const { user } = setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    expect(scroll).toHaveBeenCalledWith({ block: 'nearest', behavior: 'auto' });
+    vi.unstubAllGlobals();
   });
 
   it('moves focus to the next button once the answer is correct', async () => {

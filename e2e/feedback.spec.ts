@@ -26,6 +26,27 @@ test('module 6: a wrong sum shows comparison bars without the answer label', asy
   await expect(bars.locator('[data-row="goal"] .label')).toHaveCount(0);
 });
 
+test('module 6: the comparison bars are not hidden behind the action bar after a wrong check', async ({ page }) => {
+  await page.goto('./#/jumlah-penyebut-sama/latihan');
+  const task = page.locator('[data-task-kind="add"]');
+  const correct = await task.getAttribute('data-correct');
+  const wrong = page.locator(`[data-card]:not([data-card="${correct}"])`).first();
+  await dragTo(page, wrong, page.getByTestId('slot-pilihan'));
+  await page.getByRole('button', { name: 'Cek jawaban' }).click();
+  const bars = page.getByTestId('diff-bars');
+  await expect(bars).toBeVisible();
+  await expect
+    .poll(() =>
+      bars.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        const bar = document.querySelector('.actions')!.getBoundingClientRect();
+        const hit = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+        return box.bottom <= bar.top && box.top >= 0 && !!hit && el.contains(hit);
+      }),
+    )
+    .toBe(true);
+});
+
 test('module 8: an uneven split shows the count in each bag', async ({ page }) => {
   await page.goto('./#/pecahan-dari-jumlah/latihan');
   const task = page.locator('[data-task-kind="split"]');

@@ -73,7 +73,7 @@
     <div class="aid">
       <Bar {rows} stacking={shownStacking} draggable={!locked && !diff} note={stackNote(rows, shownStacking)} onstack={(next) => (stacking = next)} />
     </div>
-  {:else}
+  {:else if feedback !== 'correct'}
     <button type="button" class="aid-toggle" onclick={() => (aidOpen = true)}>bingung? buka pitanya ↓</button>
   {/if}
 </div>

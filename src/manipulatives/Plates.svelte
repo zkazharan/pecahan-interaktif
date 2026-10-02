@@ -55,6 +55,7 @@
   });
 
   const arcs = $derived(sliceAngles(equalSlices(capacity)));
+  const trayHidden = $derived(locked && placement.tray === 0);
   const pieceName = $derived(`Potongan ${spokenFraction(frac(1, capacity))}`);
 
   function shown(count: number): number {
@@ -66,7 +67,7 @@
   }
 </script>
 
-<div class="plates" bind:this={root}>
+<div class="plates" data-locked={locked ? '' : undefined} bind:this={root}>
   <div class="row">
     {#each placement.plates as count, i (i)}
       <div
@@ -107,24 +108,26 @@
       </div>
     {/each}
   </div>
-  <div
-    class="tray"
-    data-container={TRAY}
-    data-testid="tray"
-    use:dropTarget={{ controller, id: TRAY, label: 'nampan potongan', accepts: (itemId) => sourceOf(itemId) !== TRAY }}
-  >
-    {#each Array.from({ length: placement.tray }, (_, k) => k) as k (k)}
-      <svg
-        class="tray-piece"
-        viewBox={`0 0 ${CIRCLE.view} ${CIRCLE.view}`}
-        data-tray-piece
-        data-piece-item={trayItemId(k)}
-        use:draggable={{ controller, id: trayItemId(k), label: pieceName, disabled: locked }}
-      >
-        <path class="piece" d={wedgePath(arcs[0].start, arcs[0].end)} style:fill={color} />
-      </svg>
-    {/each}
-  </div>
+  {#if !trayHidden}
+    <div
+      class="tray"
+      data-container={TRAY}
+      data-testid="tray"
+      use:dropTarget={{ controller, id: TRAY, label: 'nampan potongan', accepts: (itemId) => sourceOf(itemId) !== TRAY }}
+    >
+      {#each Array.from({ length: placement.tray }, (_, k) => k) as k (k)}
+        <svg
+          class="tray-piece"
+          viewBox={`0 0 ${CIRCLE.view} ${CIRCLE.view}`}
+          data-tray-piece
+          data-piece-item={trayItemId(k)}
+          use:draggable={{ controller, id: trayItemId(k), label: pieceName, disabled: locked }}
+        >
+          <path class="piece" d={wedgePath(arcs[0].start, arcs[0].end)} style:fill={color} />
+        </svg>
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -208,6 +211,11 @@
   }
   .tray-piece:focus-visible {
     outline: 3px solid var(--blue);
+  }
+  .plates[data-locked] .piece,
+  .plates[data-locked] .hit,
+  .plates[data-locked] .tray-piece {
+    cursor: default;
   }
   .tray-piece:global([data-dragging]),
   .handle:global([data-dragging]) .hit {

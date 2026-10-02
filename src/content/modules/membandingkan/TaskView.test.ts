@@ -22,6 +22,11 @@ describe('membandingkan TaskView', () => {
     expect(screen.getByRole('group', { name: 'Pita pecahan' })).toBeInTheDocument();
   });
 
+  it('drops the toggle once the answer is correct', () => {
+    render(TaskView, { props: { task: COMPARE, answer: { besar: 'c0' }, onanswer: vi.fn(), feedback: 'correct' } });
+    expect(screen.queryByRole('button', { name: 'bingung? buka pitanya ↓' })).toBeNull();
+  });
+
   it('opens the bars after a wrong answer but only stacks them with diff', () => {
     const { container } = render(TaskView, { props: { task: COMPARE, answer: { besar: 'c1' }, onanswer: vi.fn(), feedback: 'wrong' } });
     expect(screen.getByRole('group', { name: 'Pita pecahan' })).toBeInTheDocument();

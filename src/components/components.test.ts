@@ -115,7 +115,8 @@ describe('TaskChecks', () => {
   it('labels each task by its outcome', () => {
     render(TaskChecks, { props: { outcomes: ['first-try', 'shown'], total: 5 } });
     expect(screen.getByLabelText('Soal 1: benar')).toHaveTextContent('✓');
-    expect(screen.getByLabelText('Soal 2: dibantu')).toHaveTextContent('✓');
+    expect(screen.getByLabelText('Soal 2: dibantu')).toHaveTextContent('~');
+    expect(screen.getByLabelText('Soal 2: dibantu')).not.toHaveTextContent('✓');
     expect(screen.getByLabelText('Soal 3: belum')).toHaveTextContent('○');
   });
 });

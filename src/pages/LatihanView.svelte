@@ -1,5 +1,5 @@
 <script lang="ts" generics="T, A">
-  import { untrack } from 'svelte';
+  import { tick, untrack } from 'svelte';
   import HandNote from '../components/HandNote.svelte';
   import Stamp from '../components/Stamp.svelte';
   import TaskChecks from '../components/TaskChecks.svelte';
@@ -18,6 +18,7 @@
   import type { LatihanDef } from '../content/types';
   import type { ProgressStore } from '../lib/progress';
   import { progress } from '../lib/progress-instance';
+  import { prefersReducedMotion } from '../lib/motion';
   import { createRng, randomSeed } from '../lib/random';
 
   type Props = {
@@ -38,6 +39,9 @@
   let hint = $state('');
   let checked = $state<string | null>(null);
   let primary = $state<HTMLButtonElement | null>(null);
+  let root = $state<HTMLElement | null>(null);
+  let bar = $state<HTMLElement | null>(null);
+  let barHeight = $state(0);
 
   const task = $derived(tasks[flow.index]);
   const firstTry = $derived(firstTryCount(flow.outcomes));
@@ -54,11 +58,24 @@
     if (settled) primary?.focus();
   });
 
+  async function revealFeedback(): Promise<void> {
+    await tick();
+    if (!root || !bar) return;
+    const barTop = bar.getBoundingClientRect().top;
+    const targets = root.querySelectorAll<HTMLElement>('[data-testid="diff"], .feedback');
+    for (const target of targets) {
+      if (target.getBoundingClientRect().bottom <= barTop) continue;
+      target.style.scrollMarginBottom = `${bar.getBoundingClientRect().height + 8}px`;
+      target.scrollIntoView({ block: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+    }
+  }
+
   function check(): void {
     const result = latihan.check(task, answer);
     flow = submitAnswer(flow, result.correct);
     checked = gradedKey(answer);
     hint = result.correct ? '' : result.hint;
+    if (!result.correct) void revealFeedback();
   }
 
   function reveal(): void {
@@ -87,7 +104,7 @@
   }
 </script>
 
-<section class="latihan">
+<section class="latihan" style:padding-bottom={flow.status === 'done' ? undefined : `${barHeight}px`} bind:this={root}>
   <TaskChecks outcomes={flow.outcomes} total={TASKS_PER_LATIHAN} />
 
   {#if flow.status === 'done'}
@@ -112,13 +129,13 @@
       </div>
     {/key}
     <p class="feedback" aria-live="polite">
-      {#if hint}
+      {#if hint && diff}
         <HandNote>{hint}</HandNote>
       {:else if flow.status === 'correct'}
         <HandNote color="blue">Betul!</HandNote>
       {/if}
     </p>
-    <div class="actions">
+    <div class="actions" bind:this={bar} bind:offsetHeight={barHeight}>
       {#if settled}
         <button type="button" class="btn primary" bind:this={primary} onclick={advance}>
           {flow.index + 1 === TASKS_PER_LATIHAN ? 'Lihat hasil' : 'Soal berikutnya →'}
