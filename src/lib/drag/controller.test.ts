@@ -387,6 +387,41 @@ describe('stale targets', () => {
     expect(item.hasAttribute('data-dragging')).toBe(false);
   });
 
+  it('sends a keyboard drag home when the hovered target stopped accepting the item', () => {
+    const onDrop = vi.fn();
+    const said: string[] = [];
+    const controller = new DragController({ onDrop, announce: (m) => said.push(m) });
+    const item = document.createElement('div');
+    let open = true;
+    controller.registerItem({ id: 'x', el: item, label: 'x' });
+    controller.registerTarget({ id: 't', el: document.createElement('div'), label: 't', accepts: () => open });
+    controller.keyDown('x', ' ');
+    open = false;
+    controller.keyDown('x', ' ');
+    expect(onDrop).not.toHaveBeenCalled();
+    expect(said.at(-1)).toBe('Batal.');
+    expect(controller.isDragging()).toBe(false);
+    expect(item.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('does not drop a pointer drag on a target that stopped accepting the item', () => {
+    const onDrop = vi.fn();
+    const rects = new Map<Element, Rect>();
+    const controller = new DragController({ onDrop, rectOf: (el) => rects.get(el) ?? { left: 0, top: 0, width: 0, height: 0 } });
+    const item = document.createElement('div');
+    const target = document.createElement('div');
+    rects.set(target, { left: 100, top: 0, width: 100, height: 100 });
+    let open = true;
+    controller.registerItem({ id: 'x', el: item, label: 'x' });
+    controller.registerTarget({ id: 't', el: target, label: 't', accepts: () => open });
+    controller.start('x', { pointerId: 1, clientX: 5, clientY: 5 });
+    controller.move({ pointerId: 1, clientX: 150, clientY: 50 });
+    open = false;
+    controller.end({ pointerId: 1, clientX: 150, clientY: 50 });
+    expect(onDrop).not.toHaveBeenCalled();
+    expect(controller.isDragging()).toBe(false);
+  });
+
   it('returns a keyboard drag home when no target is left', () => {
     const onDrop = vi.fn();
     const said: string[] = [];

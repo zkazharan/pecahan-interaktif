@@ -154,7 +154,8 @@ export class DragController {
 
   private finish(drag: ActiveDrag, targetId: string | null): void {
     const item = this.items.get(drag.itemId);
-    const target = targetId === null ? null : (this.targets.get(targetId) ?? null);
+    const found = targetId === null ? null : (this.targets.get(targetId) ?? null);
+    const target = found && found.accepts(drag.itemId) ? found : null;
     this.setHover(drag, null);
     this.active = null;
     if (owner === this) owner = null;
