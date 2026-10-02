@@ -110,7 +110,8 @@ export class DragController {
     this.finish(drag, null);
   }
 
-  keyDown(itemId: string, key: string): boolean {
+  keyDown(itemId: string, key: string, repeat = false): boolean {
+    if (repeat && PICK_KEYS.has(key)) return true;
     const drag = this.active;
     if (!drag) return this.pickUp(itemId, key);
     if (drag.kind !== 'keyboard' || drag.itemId !== itemId) return false;
@@ -128,7 +129,7 @@ export class DragController {
     const options = this.acceptingTargets(itemId);
     if (options.length === 0) return true;
     const index = options.findIndex((target) => target.id === drag.hoverId);
-    const next = options[(index + step + options.length) % options.length];
+    const next = index < 0 ? options[0] : options[(index + step + options.length) % options.length];
     this.setHover(drag, next.id);
     this.say(next.label);
     return true;
@@ -153,17 +154,24 @@ export class DragController {
 
   private finish(drag: ActiveDrag, targetId: string | null): void {
     const item = this.items.get(drag.itemId);
+    const target = this.resolveTarget(drag, targetId);
     this.setHover(drag, null);
     this.active = null;
     if (owner === this) owner = null;
     if (item) {
       item.el.removeAttribute('data-dragging');
-      setOffset(item.el, 0, 0, targetId === null && drag.kind === 'pointer' && !this.reducedMotion());
+      setOffset(item.el, 0, 0, target === null && drag.kind === 'pointer' && !this.reducedMotion());
     }
-    if (targetId === null) return;
+    if (!target) return;
+    this.options.onDrop({ itemId: drag.itemId, targetId: target.id });
+    if (item) this.say(`${item.label} ditaruh di ${target.label}.`);
+  }
+
+  private resolveTarget(drag: ActiveDrag, targetId: string | null): DropTarget | null {
+    if (targetId === null) return null;
     const target = this.targets.get(targetId);
-    this.options.onDrop({ itemId: drag.itemId, targetId });
-    if (item && target) this.say(`${item.label} ditaruh di ${target.label}.`);
+    if (target) return target;
+    return drag.kind === 'keyboard' ? (this.acceptingTargets(drag.itemId)[0] ?? null) : null;
   }
 
   private canStart(): boolean {
@@ -176,7 +184,7 @@ export class DragController {
   }
 
   private acceptingTargets(itemId: string): DropTarget[] {
-    return [...this.targets.values()].filter((target) => target.accepts(itemId));
+    return [...this.targets.values()].filter((target) => target.accepts(itemId)).sort(byDocumentOrder);
   }
 
   private targetNear(itemId: string, point: Point): string | null {
@@ -206,19 +214,63 @@ function distanceToRect(x: number, y: number, rect: Rect): number {
   return Math.hypot(dx, dy);
 }
 
+function byDocumentOrder(a: DropTarget, b: DropTarget): number {
+  const position = a.el.compareDocumentPosition(b.el);
+  if (position & Node.DOCUMENT_POSITION_DISCONNECTED) return 0;
+  if (position & Node.DOCUMENT_POSITION_FOLLOWING) return -1;
+  if (position & Node.DOCUMENT_POSITION_PRECEDING) return 1;
+  return 0;
+}
+
+const RETURN_MS = 200;
+const cancelCleanup = new WeakMap<Element, () => void>();
+
+function parentScale(el: Element): { x: number; y: number } {
+  if (!(el instanceof SVGElement)) return { x: 1, y: 1 };
+  for (let node = el.parentNode; node; node = node.parentNode) {
+    const owner = node as Partial<SVGGraphicsElement>;
+    if (typeof owner.getScreenCTM !== 'function') continue;
+    const matrix = owner.getScreenCTM();
+    return matrix && matrix.a !== 0 && matrix.d !== 0 ? { x: matrix.a, y: matrix.d } : { x: 1, y: 1 };
+  }
+  return { x: 1, y: 1 };
+}
+
+function clearInline(style: CSSStyleDeclaration): void {
+  style.removeProperty('transition');
+  style.removeProperty('transform');
+}
+
+function scheduleCleanup(el: Element, style: CSSStyleDeclaration): void {
+  const stop = () => {
+    clearTimeout(timer);
+    el.removeEventListener('transitionend', onEnd);
+    cancelCleanup.delete(el);
+  };
+  const finish = () => {
+    stop();
+    if (!el.hasAttribute('data-dragging')) clearInline(style);
+  };
+  const onEnd = (event: Event) => {
+    if (event.target === el) finish();
+  };
+  const timer = setTimeout(finish, RETURN_MS + 100);
+  el.addEventListener('transitionend', onEnd);
+  cancelCleanup.set(el, stop);
+}
+
 function setOffset(el: Element, dx: number, dy: number, animate: boolean): void {
   const style = (el as HTMLElement | SVGElement).style;
   if (!style) return;
-  let x = dx;
-  let y = dy;
-  const svg = el instanceof SVGElement ? el.ownerSVGElement : null;
-  if (svg && typeof svg.getScreenCTM === 'function') {
-    const matrix = svg.getScreenCTM();
-    if (matrix && matrix.a !== 0 && matrix.d !== 0) {
-      x = dx / matrix.a;
-      y = dy / matrix.d;
-    }
+  cancelCleanup.get(el)?.();
+  if (dx === 0 && dy === 0 && !animate) {
+    clearInline(style);
+    return;
   }
-  style.transition = animate ? 'transform 200ms ease-out' : 'none';
+  const scale = parentScale(el);
+  const x = dx / scale.x;
+  const y = dy / scale.y;
+  style.transition = animate ? `transform ${RETURN_MS}ms ease-out` : 'none';
   style.transform = x === 0 && y === 0 ? '' : `translate(${x}px, ${y}px)`;
+  if (animate) scheduleCleanup(el, style);
 }

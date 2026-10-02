@@ -1,7 +1,9 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { CATALOG } from '../content/catalog';
   import { nextReadyModule } from '../content/registry';
   import type { ModuleDef } from '../content/types';
+  import { clearAnnouncer } from '../lib/drag/announce';
   import { router } from '../lib/route.svelte';
   import type { Tab } from '../lib/router';
   import LatihanView from './LatihanView.svelte';
@@ -14,6 +16,13 @@
   const Peraga = $derived(module.peraga.View);
   const canFullscreen = typeof document !== 'undefined' && typeof document.documentElement.requestFullscreen === 'function';
   let resetKey = $state(0);
+
+  $effect(() => {
+    void tab;
+    clearAnnouncer();
+  });
+
+  onDestroy(clearAnnouncer);
 
   function toggleFullscreen(): void {
     if (document.fullscreenElement) {

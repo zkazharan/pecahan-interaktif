@@ -39,6 +39,7 @@ export const draggable: Action<HTMLElement | SVGElement, DraggableParams> = (nod
       return;
     }
     event.preventDefault();
+    node.focus({ preventScroll: true });
   }
 
   const onPointerMove = (event: PointerEvent) => params.controller.move(event);
@@ -50,7 +51,7 @@ export const draggable: Action<HTMLElement | SVGElement, DraggableParams> = (nod
 
   function onKeyDown(event: KeyboardEvent): void {
     if (params.disabled) return;
-    if (params.controller.keyDown(params.id, event.key)) event.preventDefault();
+    if (params.controller.keyDown(params.id, event.key, event.repeat)) event.preventDefault();
   }
 
   node.addEventListener('pointerdown', onPointerDown as EventListener);
@@ -63,6 +64,7 @@ export const draggable: Action<HTMLElement | SVGElement, DraggableParams> = (nod
 
   return {
     update(next) {
+      if (next.id !== params.id) params.controller.cancelItem(params.id);
       unregister();
       params = next;
       unregister = register(next);
@@ -87,8 +89,9 @@ export const dropTarget: Action<Element, DropTargetParams> = (node, initial) => 
   let unregister = register(initial);
   return {
     update(next) {
-      unregister();
+      const previous = unregister;
       unregister = register(next);
+      previous();
     },
     destroy() {
       unregister();

@@ -2,6 +2,9 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Plates from './Plates.svelte';
 import type { PlatesState } from './plates';
+import { ensureAnnouncer } from '../lib/drag/announce';
+
+ensureAnnouncer();
 
 describe('Plates', () => {
   afterEach(() => {

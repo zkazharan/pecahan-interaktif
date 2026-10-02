@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DragController, type DropEvent, type Rect } from './controller';
 
 function setup() {
@@ -331,5 +331,201 @@ describe('single drag across controllers', () => {
     a.controller.keyDown('piece', 'Escape');
     expect(b.controller.keyDown('piece', ' ')).toBe(true);
     b.controller.cancelItem('piece');
+  });
+});
+
+describe('key repeat', () => {
+  it('ignores a repeated Space or Enter when picking up', () => {
+    const { controller } = setup();
+    controller.keyDown('piece', ' ', true);
+    expect(controller.isDragging()).toBe(false);
+    controller.keyDown('piece', 'Enter', true);
+    expect(controller.isDragging()).toBe(false);
+  });
+
+  it('ignores a repeated Space or Enter when dropping', () => {
+    const { controller, drops } = setup();
+    controller.keyDown('piece', ' ');
+    controller.keyDown('piece', ' ', true);
+    controller.keyDown('piece', 'Enter', true);
+    expect(controller.isDragging()).toBe(true);
+    expect(drops).toEqual([]);
+    controller.keyDown('piece', ' ');
+    expect(drops).toEqual([{ itemId: 'piece', targetId: 'a' }]);
+  });
+});
+
+describe('stale targets', () => {
+  it('sends a pointer drag home when the hovered target was removed', () => {
+    const rects = new Map<Element, Rect>();
+    const drops: DropEvent[] = [];
+    const controller = new DragController({ onDrop: (e) => drops.push(e), rectOf: (el) => rects.get(el)! });
+    const item = document.createElement('div');
+    const target = document.createElement('div');
+    rects.set(item, { left: 0, top: 0, width: 10, height: 10 });
+    rects.set(target, { left: 100, top: 0, width: 100, height: 100 });
+    controller.registerItem({ id: 'x', el: item, label: 'x' });
+    const unregister = controller.registerTarget({ id: 't', el: target, label: 't', accepts: () => true });
+    controller.start('x', { pointerId: P1, clientX: 5, clientY: 5 });
+    controller.move({ pointerId: P1, clientX: 150, clientY: 50 });
+    unregister();
+    controller.end({ pointerId: P1, clientX: 150, clientY: 50 });
+    expect(drops).toEqual([]);
+    expect(controller.isDragging()).toBe(false);
+  });
+
+  it('never drops a keyboard drag on a removed target', () => {
+    const { controller, drops } = setup();
+    const removed = controller.registerTarget({ id: 'gone', el: document.createElement('div'), label: 'Hilang', accepts: () => true });
+    controller.keyDown('piece', ' ');
+    controller.keyDown('piece', 'ArrowLeft');
+    removed();
+    controller.keyDown('piece', ' ');
+    expect(drops.map((d) => d.targetId)).not.toContain('gone');
+    expect(drops).toEqual([{ itemId: 'piece', targetId: 'a' }]);
+    expect(controller.isDragging()).toBe(false);
+  });
+
+  it('returns a keyboard drag home when no target is left', () => {
+    const onDrop = vi.fn();
+    const controller = new DragController({ onDrop });
+    const item = document.createElement('div');
+    controller.registerItem({ id: 'x', el: item, label: 'x' });
+    const unregister = controller.registerTarget({ id: 't', el: document.createElement('div'), label: 't', accepts: () => true });
+    controller.keyDown('x', ' ');
+    unregister();
+    controller.keyDown('x', ' ');
+    expect(onDrop).not.toHaveBeenCalled();
+    expect(controller.isDragging()).toBe(false);
+    expect(item.hasAttribute('data-dragging')).toBe(false);
+  });
+
+  it('starts the next keyboard hover from the first remaining target', () => {
+    const { controller, a, b } = setup();
+    const extra = controller.registerTarget({ id: 'z', el: document.createElement('div'), label: 'Kotak Z', accepts: () => true });
+    controller.keyDown('piece', ' ');
+    controller.keyDown('piece', 'ArrowLeft');
+    extra();
+    controller.keyDown('piece', 'ArrowLeft');
+    expect(a.hasAttribute('data-drop-hover')).toBe(true);
+    expect(b.hasAttribute('data-drop-hover')).toBe(false);
+    controller.cancelItem('piece');
+  });
+});
+
+describe('keyboard order', () => {
+  function ordered() {
+    const drops: DropEvent[] = [];
+    const controller = new DragController({ onDrop: (e) => drops.push(e), announce: () => {} });
+    const root = document.createElement('div');
+    const els = ['first', 'second', 'third'].map((name) => {
+      const el = document.createElement('div');
+      el.id = name;
+      root.append(el);
+      return el;
+    });
+    const item = document.createElement('div');
+    root.append(item);
+    document.body.append(root);
+    controller.registerItem({ id: 'x', el: item, label: 'x' });
+    return { controller, drops, els, root };
+  }
+
+  it('cycles in DOM order rather than registration order', () => {
+    const { controller, drops, els, root } = ordered();
+    const [first, second, third] = els;
+    controller.registerTarget({ id: 'third', el: third, label: 'Tiga', accepts: () => true });
+    controller.registerTarget({ id: 'first', el: first, label: 'Satu', accepts: () => true });
+    controller.registerTarget({ id: 'second', el: second, label: 'Dua', accepts: () => true });
+    controller.keyDown('x', ' ');
+    expect(first.hasAttribute('data-drop-hover')).toBe(true);
+    controller.keyDown('x', 'ArrowRight');
+    expect(second.hasAttribute('data-drop-hover')).toBe(true);
+    controller.keyDown('x', 'ArrowRight');
+    expect(third.hasAttribute('data-drop-hover')).toBe(true);
+    controller.keyDown('x', ' ');
+    expect(drops).toEqual([{ itemId: 'x', targetId: 'third' }]);
+    root.remove();
+  });
+
+  it('follows the DOM after elements are reordered', () => {
+    const { controller, els, root } = ordered();
+    const [first, second, third] = els;
+    for (const [id, el] of [['first', first], ['second', second], ['third', third]] as const) {
+      controller.registerTarget({ id, el, label: id, accepts: () => true });
+    }
+    root.prepend(third);
+    controller.keyDown('x', ' ');
+    expect(third.hasAttribute('data-drop-hover')).toBe(true);
+    controller.cancelItem('x');
+    root.remove();
+  });
+});
+
+describe('svg scale from the parent', () => {
+  it('uses the screen matrix of the nearest parent group', () => {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    const group = document.createElementNS(ns, 'g');
+    const rect = document.createElementNS(ns, 'rect');
+    group.append(rect);
+    svg.append(group);
+    svg.getScreenCTM = () => ({ a: 1, d: 1 }) as DOMMatrix;
+    (group as unknown as SVGGraphicsElement).getScreenCTM = () => ({ a: 4, d: 2 }) as DOMMatrix;
+    const controller = new DragController({ onDrop: () => {}, rectOf: () => ({ left: 0, top: 0, width: 0, height: 0 }) });
+    controller.registerItem({ id: 'r', el: rect, label: 'r' });
+    controller.start('r', { pointerId: P1, clientX: 0, clientY: 0 });
+    controller.move({ pointerId: P1, clientX: 40, clientY: 20 });
+    expect((rect as unknown as SVGElement).style.transform).toBe('translate(10px, 10px)');
+    controller.cancelItem('r');
+  });
+});
+
+describe('inline style cleanup', () => {
+  function dragged(reducedMotion: boolean) {
+    vi.useFakeTimers();
+    const item = document.createElement('div');
+    const controller = new DragController({
+      onDrop: () => {},
+      reducedMotion: () => reducedMotion,
+      rectOf: () => ({ left: 0, top: 0, width: 0, height: 0 }),
+    });
+    controller.registerItem({ id: 'x', el: item, label: 'x' });
+    controller.start('x', { pointerId: P1, clientX: 0, clientY: 0 });
+    controller.move({ pointerId: P1, clientX: 300, clientY: 300 });
+    controller.end({ pointerId: P1, clientX: 300, clientY: 300 });
+    return { item, controller };
+  }
+
+  afterEach(() => vi.useRealTimers());
+
+  it('clears transition and transform after the return transition ends', () => {
+    const { item } = dragged(false);
+    expect(item.style.transition).toContain('200ms');
+    item.dispatchEvent(new Event('transitionend'));
+    expect(item.style.transition).toBe('');
+    expect(item.style.transform).toBe('');
+    expect(item.getAttribute('style') ?? '').not.toContain('transition');
+  });
+
+  it('clears them on a timer when transitionend never fires', () => {
+    const { item } = dragged(false);
+    vi.advanceTimersByTime(400);
+    expect(item.style.transition).toBe('');
+  });
+
+  it('clears them straight away under reduced motion', () => {
+    const { item } = dragged(true);
+    expect(item.style.transition).toBe('');
+    expect(item.style.transform).toBe('');
+  });
+
+  it('does not touch the style of a new drag started before the cleanup', () => {
+    const { item, controller } = dragged(false);
+    controller.start('x', { pointerId: P1, clientX: 0, clientY: 0 });
+    controller.move({ pointerId: P1, clientX: 10, clientY: 10 });
+    vi.advanceTimersByTime(400);
+    expect(item.style.transform).toBe('translate(10px, 10px)');
+    controller.cancelItem('x');
   });
 });

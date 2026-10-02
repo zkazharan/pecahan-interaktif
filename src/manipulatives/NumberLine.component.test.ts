@@ -5,6 +5,9 @@ import { frac } from '../lib/fraction';
 import NumberLine from './NumberLine.svelte';
 import { emptyPlacement, type Card, type Placement } from './cardSlots';
 import { tickIds } from './numberLine';
+import { ensureAnnouncer } from '../lib/drag/announce';
+
+ensureAnnouncer();
 
 const CARDS: Card[] = [
   { id: 'c0', value: frac(1, 4) },

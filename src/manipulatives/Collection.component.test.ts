@@ -3,6 +3,9 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import Collection from './Collection.svelte';
 import { bagId, type CollectionState } from './collection';
+import { ensureAnnouncer } from '../lib/drag/announce';
+
+ensureAnnouncer();
 
 describe('Collection', () => {
   afterEach(() => {

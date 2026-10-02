@@ -1,5 +1,6 @@
 let region: HTMLElement | null = null;
 let pending = 0;
+let settling = false;
 
 export function ensureAnnouncer(): HTMLElement | null {
   if (typeof document === 'undefined') return null;
@@ -23,18 +24,31 @@ function cancelFrame(handle: number): void {
   else clearTimeout(handle);
 }
 
+const SPACER = String.fromCharCode(160);
+
+export function clearAnnouncer(): void {
+  if (pending) cancelFrame(pending);
+  pending = 0;
+  settling = false;
+  if (region) region.textContent = '';
+}
+
 export function announce(message: string): void {
+  const fresh = settling || !region || !region.isConnected;
   const el = ensureAnnouncer();
   if (!el) return;
   if (pending) cancelFrame(pending);
   pending = 0;
-  if (el.textContent !== message) {
-    el.textContent = message;
+  if (fresh) {
+    settling = true;
+    pending = nextFrame(() => {
+      pending = 0;
+      settling = false;
+      el.textContent = message;
+    });
     return;
   }
-  el.textContent = '';
-  pending = nextFrame(() => {
-    pending = 0;
-    el.textContent = message;
-  });
+  const current = el.textContent ?? '';
+  const repeated = current.endsWith(SPACER) ? current.slice(0, -1) === message : current === message;
+  el.textContent = repeated && !current.endsWith(SPACER) ? message + SPACER : message;
 }
