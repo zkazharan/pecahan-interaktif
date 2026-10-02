@@ -39,44 +39,69 @@ function mergeMaps(base: ProgressMap, extra: ProgressMap): ProgressMap {
   return out;
 }
 
+type StoredRead = { kind: 'ok'; map: ProgressMap } | { kind: 'absent' } | { kind: 'unavailable' };
+
 export function createProgressStore(storage: StorageLike | null) {
-  let memory: ProgressMap = read() ?? {};
+  const initial = read();
+  let memory: ProgressMap = initial.kind === 'ok' ? initial.map : {};
+  let dirty = false;
   const listeners = new Set<() => void>();
 
-  function read(): ProgressMap | null {
+  function read(): StoredRead {
+    if (!storage) return { kind: 'unavailable' };
+    let raw: string | null;
     try {
-      const raw = storage?.getItem(PROGRESS_KEY);
-      if (!raw) return null;
-      const data: unknown = JSON.parse(raw);
-      return isProgressMap(data) ? data : null;
+      raw = storage.getItem(PROGRESS_KEY);
     } catch {
-      return null;
+      return { kind: 'unavailable' };
+    }
+    if (!raw) return { kind: 'absent' };
+    try {
+      const data: unknown = JSON.parse(raw);
+      return isProgressMap(data) ? { kind: 'ok', map: data } : { kind: 'absent' };
+    } catch {
+      return { kind: 'absent' };
     }
   }
 
   function persist(): void {
     try {
       storage?.setItem(PROGRESS_KEY, JSON.stringify(memory));
+      dirty = false;
     } catch {
-      return;
+      dirty = true;
     }
+  }
+
+  function sync(): void {
+    const stored = read();
+    if (stored.kind === 'unavailable') return;
+    const base = stored.kind === 'ok' ? stored.map : {};
+    memory = dirty ? mergeMaps(base, memory) : copyMap(base);
   }
 
   function onStorage(event: StorageEvent): void {
     if (event.key !== null && event.key !== PROGRESS_KEY) return;
-    memory = read() ?? {};
-    for (const listener of [...listeners]) listener();
+    sync();
+    for (const listener of [...listeners]) {
+      try {
+        listener();
+      } catch {
+        continue;
+      }
+    }
   }
 
   return {
     all(): ProgressMap {
+      sync();
       return copyMap(memory);
     },
     record(slug: string, firstTry: number, now: Date = new Date()): ModuleProgress {
       if (!isValidFirstTry(firstTry)) {
         throw new RangeError(`firstTry out of range: ${firstTry}`);
       }
-      memory = mergeMaps(memory, read() ?? {});
+      sync();
       const previous = Object.hasOwn(memory, slug) ? memory[slug].bestFirstTry : MIN_FIRST_TRY;
       const entry: ModuleProgress = {
         bestFirstTry: Math.max(previous, firstTry),
@@ -88,6 +113,7 @@ export function createProgressStore(storage: StorageLike | null) {
     },
     clear(): void {
       memory = {};
+      dirty = false;
       try {
         storage?.removeItem(PROGRESS_KEY);
       } catch {

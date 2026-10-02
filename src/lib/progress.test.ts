@@ -198,4 +198,84 @@ describe('createProgressStore', () => {
     expect(home.all()).toEqual({});
     unsubscribe();
   });
+
+  it('does not resurrect stamps that another store cleared', () => {
+    const { storage, data } = memoryStorage();
+    createProgressStore(storage).record('a', 3, NOW);
+    const first = createProgressStore(storage);
+    expect(Object.keys(first.all())).toEqual(['a']);
+    createProgressStore(storage).clear();
+    first.record('b', 2, LATER);
+    expect(Object.keys(JSON.parse(data[PROGRESS_KEY]))).toEqual(['b']);
+    expect(Object.keys(first.all())).toEqual(['b']);
+  });
+
+  it('all() reflects another store write without any event', () => {
+    const { storage } = memoryStorage();
+    const home = createProgressStore(storage);
+    expect(home.all()).toEqual({});
+    createProgressStore(storage).record('senilai', 4, NOW);
+    expect(home.all().senilai.bestFirstTry).toBe(4);
+    createProgressStore(storage).clear();
+    expect(home.all()).toEqual({});
+  });
+
+  it('retries unsaved records into storage once writes work again', () => {
+    const { storage, data } = memoryStorage();
+    let failing = true;
+    const flaky: StorageLike = {
+      ...storage,
+      setItem: (key, value) => {
+        if (failing) throw new DOMException('full', 'QuotaExceededError');
+        storage.setItem(key, value);
+      },
+    };
+    const store = createProgressStore(flaky);
+    store.record('a', 3, NOW);
+    expect(PROGRESS_KEY in data).toBe(false);
+    expect(store.all().a.bestFirstTry).toBe(3);
+    failing = false;
+    store.record('b', 1, LATER);
+    expect(Object.keys(JSON.parse(data[PROGRESS_KEY])).sort()).toEqual(['a', 'b']);
+  });
+
+  it('keeps memory when the storage event arrives but reading throws', () => {
+    const { storage } = memoryStorage();
+    let blocked = false;
+    const flaky: StorageLike = {
+      ...storage,
+      getItem: (key) => {
+        if (blocked) throw new Error('blocked');
+        return storage.getItem(key);
+      },
+    };
+    const store = createProgressStore(flaky);
+    store.record('a', 3, NOW);
+    const unsubscribe = store.subscribe(() => {});
+    blocked = true;
+    window.dispatchEvent(new StorageEvent('storage', { key: PROGRESS_KEY }));
+    expect(store.all().a.bestFirstTry).toBe(3);
+    unsubscribe();
+  });
+
+  it('treats corrupt stored data as empty on re-read', () => {
+    const { storage, data } = memoryStorage();
+    const store = createProgressStore(storage);
+    store.record('a', 3, NOW);
+    data[PROGRESS_KEY] = '{not json';
+    expect(store.all()).toEqual({});
+  });
+
+  it('a throwing listener does not stop the others', () => {
+    const store = createProgressStore(memoryStorage().storage);
+    const after = vi.fn();
+    const unsubscribeBad = store.subscribe(() => {
+      throw new Error('boom');
+    });
+    const unsubscribeGood = store.subscribe(after);
+    window.dispatchEvent(new StorageEvent('storage', { key: PROGRESS_KEY }));
+    expect(after).toHaveBeenCalledTimes(1);
+    unsubscribeBad();
+    unsubscribeGood();
+  });
 });
