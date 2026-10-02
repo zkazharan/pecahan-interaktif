@@ -8,10 +8,13 @@ import { emptyAnswer, generateTasks, shadeDiff, type MembacaTask } from './tasks
 const shade: MembacaTask = { kind: 'shade', target: frac(2, 5) };
 const [, , line, , read] = generateTasks(createRng(7));
 
-function outlinedSlices(container: HTMLElement): number[] {
+function marked(container: HTMLElement, attribute: string): number[] {
   const wedges = [...container.querySelectorAll('[data-slice]')].map((el) => el.getAttribute('d'));
-  return [...container.querySelectorAll('[data-outlined]')].map((el) => wedges.indexOf(el.getAttribute('d')));
+  return [...container.querySelectorAll(`[${attribute}]`)].map((el) => wedges.indexOf(el.getAttribute('d')));
 }
+
+const outlinedSlices = (container: HTMLElement) => marked(container, 'data-outlined');
+const crossedSlices = (container: HTMLElement) => marked(container, 'data-crossed');
 
 describe('membaca-pecahan TaskView', () => {
   it('toggles a slice in the answer', async () => {
@@ -46,18 +49,21 @@ describe('membaca-pecahan TaskView', () => {
     const { container } = render(TaskView, { props: { task, answer: { shaded: [false, false, false, false, true, false], placement: {} }, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
     expect(container.querySelector('[data-task-kind="shade"]')).toHaveAttribute('data-diff', 'true');
     expect(outlinedSlices(container)).toEqual([0, 1]);
+    expect(crossedSlices(container)).toEqual([]);
   });
 
-  it('outlines the extra slices on a shade task', () => {
+  it('crosses the extra slices instead of outlining them on a shade task', () => {
     const task: MembacaTask = { kind: 'shade', target: frac(1, 4) };
     const { container } = render(TaskView, { props: { task, answer: { shaded: [true, true, true, false], placement: {} }, onanswer: vi.fn(), feedback: 'wrong', diff: true } });
-    expect(outlinedSlices(container)).toEqual([1, 2]);
+    expect(crossedSlices(container)).toEqual([1, 2]);
+    expect(outlinedSlices(container)).toEqual([]);
   });
 
   it('outlines nothing without diff', () => {
     const task: MembacaTask = { kind: 'shade', target: frac(3, 6) };
     const { container } = render(TaskView, { props: { task, answer: { shaded: [false, false, false, false, true, false], placement: {} }, onanswer: vi.fn(), feedback: 'wrong' } });
     expect(container.querySelectorAll('[data-outlined]')).toHaveLength(0);
+    expect(container.querySelectorAll('[data-crossed]')).toHaveLength(0);
     expect(container.querySelector('[data-diff]')).toBeNull();
   });
 
@@ -105,15 +111,24 @@ describe('membaca-pecahan TaskView', () => {
 });
 
 describe('shadeDiff', () => {
-  it('marks the first unshaded slices when too few are shaded', () => {
-    expect(shadeDiff(frac(3, 6), [false, false, false, false, true, false])).toEqual([true, true, false, false, false, false]);
+  it('marks the first unshaded slices as missing when too few are shaded', () => {
+    expect(shadeDiff(frac(3, 6), [false, false, false, false, true, false])).toEqual({
+      missing: [true, true, false, false, false, false],
+      extra: [false, false, false, false, false, false],
+    });
   });
 
-  it('marks the last shaded slices when too many are shaded', () => {
-    expect(shadeDiff(frac(1, 4), [true, true, true, false])).toEqual([false, true, true, false]);
+  it('marks the last shaded slices as extra when too many are shaded', () => {
+    expect(shadeDiff(frac(1, 4), [true, true, true, false])).toEqual({
+      missing: [false, false, false, false],
+      extra: [false, true, true, false],
+    });
   });
 
   it('marks nothing when the count is right', () => {
-    expect(shadeDiff(frac(2, 4), [true, false, true, false])).toEqual([false, false, false, false]);
+    expect(shadeDiff(frac(2, 4), [true, false, true, false])).toEqual({
+      missing: [false, false, false, false],
+      extra: [false, false, false, false],
+    });
   });
 });

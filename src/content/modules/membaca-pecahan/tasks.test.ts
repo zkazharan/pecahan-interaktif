@@ -94,3 +94,36 @@ describe('isComplete', () => {
     expect(isComplete(read, solution(read))).toBe(true);
   });
 });
+
+describe('checkTask hints for read tasks', () => {
+  const task: MembacaTask = {
+    kind: 'read',
+    shaded: frac(2, 5),
+    correctId: 'c0',
+    cards: [
+      { id: 'c0', value: frac(2, 5) },
+      { id: 'c1', value: frac(3, 5) },
+      { id: 'c2', value: frac(2, 3) },
+    ],
+  };
+  const pick = (id: string | null) => ({ shaded: [], placement: { pilihan: id } });
+
+  it('points at the shaded slices when the white part was read', () => {
+    expect(checkTask(task, pick('c1'))).toEqual({ correct: false, hint: 'Pembilang = potong yang diarsir, bukan yang putih.' });
+  });
+
+  it('points at all slices when the shaded part was compared with the white part', () => {
+    expect(checkTask(task, pick('c2'))).toEqual({ correct: false, hint: 'Penyebut = semua potong, termasuk yang diarsir.' });
+  });
+
+  it('keeps the general hint for any other card or no card', () => {
+    const other: MembacaTask = { ...task, cards: [task.cards[0], { id: 'c1', value: frac(4, 7) }, task.cards[2]] };
+    const general = 'Penyebut = semua potong. Pembilang = potong yang diarsir.';
+    expect(checkTask(other, pick('c1')).hint).toBe(general);
+    expect(checkTask(task, pick(null)).hint).toBe(general);
+  });
+
+  it('gives no hint for the right card', () => {
+    expect(checkTask(task, pick('c0'))).toEqual({ correct: true, hint: '' });
+  });
+});

@@ -270,4 +270,26 @@ describe('Bar', () => {
     });
     expect(container.querySelector('[data-row="a"] .label')).toBeNull();
   });
+
+  it('draws a caption for a row that has one and hides it from assistive tech', () => {
+    const rows: BarRow[] = [
+      { ...ROWS[0], caption: 'Tujuan' },
+      { ...ROWS[1], caption: 'Pilihanmu' },
+    ];
+    const { container } = render(Bar, { props: { rows, stacking: null } });
+    const goal = container.querySelector('[data-row="a"] .caption')!;
+    expect(goal).toHaveTextContent('Tujuan');
+    expect(goal).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('[data-row="b"] .caption')).toHaveTextContent('Pilihanmu');
+  });
+
+  it('draws no caption unless a row asks for one', () => {
+    const { container } = render(Bar, { props: { rows: ROWS, stacking: null } });
+    expect(container.querySelector('.caption')).toBeNull();
+  });
+
+  it('sets the note font size from the rendered width', () => {
+    render(Bar, { props: { rows: ROWS, stacking: { pieceOf: 'a', onto: 'b' }, note: 'lebih panjang!' } });
+    expect(screen.getByText('lebih panjang!').style.fontSize).toBe('42px');
+  });
 });

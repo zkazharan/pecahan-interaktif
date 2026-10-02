@@ -8,9 +8,13 @@
   import {
     BAR,
     barUnits,
+    captionEnd,
+    captionMetrics,
+    hasCaptions,
     labelMetrics,
     dividerXs,
     hitBox,
+    noteMetrics,
     normalizeStacking,
     notePlacement,
     pieceDividerXs,
@@ -47,8 +51,11 @@
   let root: HTMLElement | undefined = $state();
 
   const units = $derived(barUnits(rows));
-  const size = $derived({ width: svgWidth, height: svgHeight, rows: rows.length });
+  const captioned = $derived(hasCaptions(rows));
+  const size = $derived({ width: svgWidth, height: svgHeight, rows: rows.length, captioned });
   const label = $derived(labelMetrics(svgWidth));
+  const caption = $derived(captionMetrics(svgWidth));
+  const noteSize = $derived(noteMetrics(svgWidth));
 
   onMount(() => {
     fade.on = true;
@@ -135,23 +142,24 @@
       : rows,
   );
   const stackedRow = $derived(stacking ? rows.find((row) => row.id === stacking.pieceOf) : undefined);
-  const placedNote = $derived(
-    stacking && stackedRow && note
-      ? notePlacement(piecePosition(rows, stackedRow.id, stacking), pieceWidth(stackedRow.value, units), note)
-      : null,
-  );
+  const placedNote = $derived.by(() => {
+    if (!stacking || !stackedRow || !note) return null;
+    const ontoCaption = rows.find((row) => row.id === stacking.onto)?.caption;
+    const minX = ontoCaption ? captionEnd(ontoCaption, caption.fontSize) + 24 : 0;
+    return notePlacement(piecePosition(rows, stackedRow.id, stacking), pieceWidth(stackedRow.value, units), note, noteSize.charWidth, minX);
+  });
 </script>
 
 <div class="bar-wrap" bind:this={root} bind:clientWidth={svgWidth} bind:clientHeight={svgHeight}>
 <svg
   class="bar"
   class:interactive={canDrag}
-  viewBox={`0 0 ${BAR.viewWidth} ${viewHeight(rows.length)}`}
+  viewBox={`0 0 ${BAR.viewWidth} ${viewHeight(rows.length, captioned)}`}
   role="group"
   aria-label="Pita pecahan"
 >
   {#each rows as row, i (row.id)}
-    {@const y = rowY(i)}
+    {@const y = rowY(i, captioned)}
     {@const shown = shownValue(row)}
     <g data-row={row.id}>
       <rect
@@ -168,6 +176,9 @@
       {/each}
       {#if stacking?.pieceOf === row.id}
         <rect class="ghost" data-ghost x={BAR.x0 + 6} y={y + 6} width={Math.max(pieceWidth(row.value, units) - 12, 0)} height={BAR.rowHeight - 12} />
+      {/if}
+      {#if row.caption}
+        <text class="caption" aria-hidden="true" x={BAR.x0 + 4} y={y - caption.baseline} style:font-size={`${caption.fontSize}px`}>{row.caption}</text>
       {/if}
       {#if !row.hideLabel}
         <g class="label" aria-hidden="true">
@@ -199,7 +210,7 @@
   {/each}
 
   {#each rows as row, i (row.id)}
-    {@const y = rowY(i)}
+    {@const y = rowY(i, captioned)}
     <g class="whole-lines" data-row-lines={row.id}>
       {#each wholeXs(row, units) as x (x)}
         <line class="whole-line" x1={BAR.x0 + x} x2={BAR.x0 + x} y1={y - 6} y2={y + BAR.rowHeight + 6} />
@@ -208,7 +219,13 @@
   {/each}
 
   {#if placedNote}
-    <text class="note" class:inside={placedNote.anchor === 'end'} x={placedNote.x} y={placedNote.y} text-anchor={placedNote.anchor}>{note}</text>
+    <text
+      class="note"
+      class:inside={placedNote.anchor === 'end'}
+      x={placedNote.x}
+      y={placedNote.y}
+      text-anchor={placedNote.anchor}
+      style:font-size={`${noteSize.fontSize}px`}>{note}</text>
   {/if}
 </svg>
 </div>
@@ -275,6 +292,11 @@
   .piece:global([data-dragging]) {
     cursor: grabbing;
     opacity: 0.92;
+  }
+  .caption {
+    font-family: var(--font-body);
+    font-weight: 600;
+    fill: var(--ink-soft);
   }
   .label text {
     font-family: var(--font-body);

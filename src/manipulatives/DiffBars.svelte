@@ -9,8 +9,8 @@
 
   const wholes = $derived(Math.max(1, Math.ceil(goal.n / goal.d), Math.ceil(mine.n / mine.d)));
   const rows = $derived<BarRow[]>([
-    { id: 'goal', value: goal, color: 'var(--frac-2)', wholes, hideLabel: hideGoal },
-    { id: 'mine', value: mine, color: 'var(--frac-1)', wholes },
+    { id: 'goal', value: goal, color: 'var(--frac-2)', wholes, hideLabel: hideGoal, caption: 'Tujuan' },
+    { id: 'mine', value: mine, color: 'var(--frac-1)', wholes, caption: 'Pilihanmu' },
   ]);
   const stacking: Stacking = { pieceOf: 'mine', onto: 'goal' };
 </script>

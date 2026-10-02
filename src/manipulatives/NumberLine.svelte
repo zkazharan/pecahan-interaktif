@@ -96,10 +96,16 @@
       {/each}
     </div>
     {#if showValues}
-      <div class="placed-values" aria-hidden="true">
-        {#each placed as p (p.card.id)}
+      <div class="placed-values" class:two-rows={rows.includes(1)} aria-hidden="true">
+        {#each placed as p, i (p.card.id)}
           {@const value = tickValue(p.index, perUnit)}
-          <span class="placed-value" data-placed-value={formatFraction(value)} style:left={left(p.index)}>
+          <span
+            class="placed-value"
+            class:low={rows[i] === 1}
+            data-placed-value={formatFraction(value)}
+            data-value-row={rows[i]}
+            style:left={left(p.index)}
+          >
             <FractionText {value} size="sm" />
           </span>
         {/each}
@@ -203,11 +209,17 @@
     position: relative;
     height: 3.2em;
   }
+  .placed-values.two-rows {
+    height: 5em;
+  }
   .placed-value {
     position: absolute;
     top: 0;
     translate: -50% 0;
     color: var(--red);
+  }
+  .placed-value.low {
+    top: 2.2em;
   }
   .tick-target {
     position: absolute;

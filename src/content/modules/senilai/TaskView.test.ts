@@ -41,7 +41,7 @@ describe('senilai TaskView', () => {
     expect(container.querySelector('[data-testid="diff"] [data-row="base"]')).not.toBeNull();
   });
 
-  it('flags the wrong pair slots and compares the first one with diff', () => {
+  it('flags the wrong pair slots and compares each of them with diff', () => {
     if (pair.kind !== 'pair') throw new Error('expected pair');
     const swapped = { ...pair.solution, s0: pair.solution.s1, s1: pair.solution.s0 };
     const plain = render(TaskView, { props: { task: pair, answer: { cuts: 1, placement: swapped }, onanswer: vi.fn(), feedback: 'wrong' } });
@@ -52,7 +52,26 @@ describe('senilai TaskView', () => {
       props: { task: pair, answer: { cuts: 1, placement: swapped }, onanswer: vi.fn(), feedback: 'wrong', diff: true },
     });
     expect(container.querySelectorAll('[data-flagged]')).toHaveLength(2);
-    expect(container.querySelector('[data-testid="diff"] [data-testid="diff-bars"]')).not.toBeNull();
+    expect(container.querySelectorAll('[data-testid="diff"] [data-testid="diff-bars"]')).toHaveLength(2);
+  });
+
+  it('draws a comparison for every wrong filled slot, at most three', () => {
+    if (pair.kind !== 'pair') throw new Error('expected pair');
+    const ids = pair.slots.map((slot) => slot.id);
+    const rotated = Object.fromEntries(ids.map((id, i) => [id, pair.solution[ids[(i + 1) % ids.length]]]));
+    const { container } = render(TaskView, {
+      props: { task: pair, answer: { cuts: 1, placement: rotated }, onanswer: vi.fn(), feedback: 'wrong', diff: true },
+    });
+    expect(container.querySelectorAll('[data-testid="diff-bars"]')).toHaveLength(Math.min(3, ids.length));
+  });
+
+  it('skips empty wrong slots', () => {
+    if (pair.kind !== 'pair') throw new Error('expected pair');
+    const [first] = pair.slots;
+    const { container } = render(TaskView, {
+      props: { task: pair, answer: { cuts: 1, placement: { [first.id]: pair.solution[pair.slots[1].id] } }, onanswer: vi.fn(), feedback: 'wrong', diff: true },
+    });
+    expect(container.querySelectorAll('[data-testid="diff-bars"]')).toHaveLength(1);
   });
 
   it('compares the chosen card with the target on simplify with diff', () => {

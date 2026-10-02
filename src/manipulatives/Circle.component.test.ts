@@ -90,4 +90,28 @@ describe('Circle', () => {
     const lastSlice = container.querySelectorAll('[data-slice]')[3];
     expect(lastSlice.compareDocumentPosition(outlined[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
+
+  it('hatches crossed slices and leaves the others plain', () => {
+    const { container } = render(Circle, {
+      props: { slices: equalSlices(4), shaded: [true, true, true, false], crossed: [false, true, true, false], label: 'Martabak' },
+    });
+    const crossed = [...container.querySelectorAll('[data-crossed]')];
+    const wedges = [...container.querySelectorAll('[data-slice]')].map((el) => el.getAttribute('d'));
+    expect(crossed.map((el) => wedges.indexOf(el.getAttribute('d')))).toEqual([1, 2]);
+    expect(container.querySelector('[data-outlined]')).toBeNull();
+  });
+
+  it('draws no hatching by default', () => {
+    const { container } = render(Circle, { props: { slices: equalSlices(4), shaded: [true, true, false, false], label: 'Martabak' } });
+    expect(container.querySelector('[data-crossed]')).toBeNull();
+  });
+
+  it('gives every circle its own hatch pattern', () => {
+    const a = render(Circle, { props: { slices: equalSlices(2), crossed: [true, false], label: 'a' } });
+    const b = render(Circle, { props: { slices: equalSlices(2), crossed: [true, false], label: 'b' } });
+    const idA = a.container.querySelector('pattern')!.id;
+    const idB = b.container.querySelector('pattern')!.id;
+    expect(idA).not.toBe(idB);
+    expect(a.container.querySelector('[data-crossed]')!.getAttribute('fill')).toBe(`url(#${idA})`);
+  });
 });

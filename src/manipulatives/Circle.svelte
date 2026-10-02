@@ -12,9 +12,13 @@
     decorative?: boolean;
     guides?: number;
     outlined?: readonly boolean[];
+    crossed?: readonly boolean[];
   };
 
-  let { slices, shaded = [], onshade, label, size = 'md', color = 'var(--frac-1)', decorative = false, guides = 0, outlined = [] }: Props = $props();
+  let { slices, shaded = [], onshade, label, size = 'md', color = 'var(--frac-1)', decorative = false, guides = 0, outlined = [], crossed = [] }: Props = $props();
+
+  const uid = $props.id();
+  const hatchId = `hatch-${uid}`;
 
   let svg: SVGSVGElement | undefined = $state();
   let lastCount = 0;
@@ -71,6 +75,18 @@
   {#each arcs as arc, i (i)}
     {#if outlined[i]}
       <path class="outlined" data-outlined d={wedgePath(arc.start, arc.end)} />
+    {/if}
+  {/each}
+  {#if crossed.some(Boolean)}
+    <defs>
+      <pattern id={hatchId} width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <line class="hatch" x1="0" y1="0" x2="0" y2="16" />
+      </pattern>
+    </defs>
+  {/if}
+  {#each arcs as arc, i (i)}
+    {#if crossed[i]}
+      <path class="crossed" data-crossed d={wedgePath(arc.start, arc.end)} fill={`url(#${hatchId})`} />
     {/if}
   {/each}
   {#if focused >= 0 && arcs[focused]}
@@ -134,6 +150,14 @@
     stroke-dasharray: 12 8;
     stroke-linejoin: round;
     pointer-events: none;
+  }
+  .crossed {
+    stroke: none;
+    pointer-events: none;
+  }
+  .hatch {
+    stroke: var(--red);
+    stroke-width: 4;
   }
   .guide {
     stroke: var(--red);

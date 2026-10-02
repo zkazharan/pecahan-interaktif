@@ -3,12 +3,14 @@ import { frac } from '../lib/fraction';
 import {
   BAR,
   barUnits,
+  captionMetrics,
   cutOf,
   dividerXs,
   hitBox,
   labelMetrics,
   maxCut,
   MAX_PARTS,
+  noteMetrics,
   normalizeStacking,
   notePlacement,
   pieceDividerXs,
@@ -223,5 +225,71 @@ describe('labelMetrics', () => {
     const tiny = labelMetrics(100);
     expect(tiny.fontSize).toBeLessThanOrEqual(64);
     expect(BAR.labelX + tiny.half).toBeLessThanOrEqual(BAR.viewWidth);
+  });
+});
+
+describe('noteMetrics', () => {
+  it('keeps the base size when the bar is wide', () => {
+    expect(noteMetrics(1000)).toEqual({ fontSize: 42, charWidth: 22 });
+    expect(noteMetrics(1819).fontSize).toBe(42);
+    expect(noteMetrics(0).fontSize).toBe(42);
+  });
+
+  it('grows so the rendered note is at least 18 px on a phone', () => {
+    const phone = noteMetrics(332);
+    expect((phone.fontSize * 332) / BAR.viewWidth).toBeGreaterThanOrEqual(18);
+    expect(phone.charWidth).toBeGreaterThan(22);
+  });
+
+  it('is capped on very narrow bars', () => {
+    expect(noteMetrics(100).fontSize).toBeLessThanOrEqual(72);
+  });
+});
+
+describe('captionMetrics', () => {
+  it('keeps the base size when the bar is wide', () => {
+    expect(captionMetrics(1000).fontSize).toBe(30);
+    expect(captionMetrics(0).fontSize).toBe(30);
+  });
+
+  it('grows so the rendered caption is at least 16 px on a phone', () => {
+    const phone = captionMetrics(332);
+    expect((phone.fontSize * 332) / BAR.viewWidth).toBeGreaterThanOrEqual(16);
+  });
+
+  it('always fits above a row with the lead space', () => {
+    for (const width of [100, 332, 600, 1000]) {
+      const { fontSize, baseline } = captionMetrics(width);
+      expect(rowY(0, true) - baseline - fontSize * 0.8).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+describe('captioned rows', () => {
+  it('leaves extra room above the first row only when captioned', () => {
+    expect(rowY(0)).toBe(BAR.top);
+    expect(rowY(0, true)).toBeGreaterThan(rowY(0));
+    expect(rowY(1, true) - rowY(0, true)).toBeGreaterThan(BAR.rowHeight + BAR.gap);
+    expect(viewHeight(2, true) - viewHeight(2)).toBe(rowY(1, true) - rowY(1));
+  });
+
+  it('moves piece positions with the captioned layout', () => {
+    const captioned: BarRow[] = ROWS.map((row) => ({ ...row, caption: 'x' }));
+    expect(piecePosition(captioned, 'b', null).y).toBe(rowY(1, true));
+    expect(piecePosition(captioned, 'a', { pieceOf: 'a', onto: 'b' }).y).toBe(rowY(1, true) - 18);
+    expect(piecePosition(ROWS, 'b', null).y).toBe(rowY(1));
+  });
+
+  it('keeps the note clear of a caption on the same band', () => {
+    const position = piecePosition(ROWS, 'a', { pieceOf: 'a', onto: 'b' });
+    const near = notePlacement(position, 60, 'lebih pendek!', 22, 300);
+    expect(near.anchor).toBe('start');
+    expect(near.x).toBe(300);
+  });
+
+  it('spaces the note by the scaled character width', () => {
+    const position = piecePosition(ROWS, 'a', { pieceOf: 'a', onto: 'b' });
+    expect(notePlacement(position, 300, 'lebih panjang!', 22).anchor).toBe('start');
+    expect(notePlacement(position, 300, 'lebih panjang!', 40).anchor).toBe('end');
   });
 });

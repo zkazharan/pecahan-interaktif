@@ -23,7 +23,7 @@
         : { 'data-correct': task.correctId },
   );
 
-  const outlined = $derived(diff && task.kind === 'shade' ? shadeDiff(task.target, answer.shaded) : []);
+  const marks = $derived(diff && task.kind === 'shade' ? shadeDiff(task.target, answer.shaded) : { missing: [], extra: [] });
   const picked = $derived(task.kind === 'read' ? task.cards.find((card) => card.id === answer.placement.pilihan) : undefined);
 
   function toggle(index: number): void {
@@ -41,7 +41,8 @@
     <Circle
       slices={equalSlices(task.target.d)}
       shaded={answer.shaded}
-      {outlined}
+      outlined={marks.missing}
+      crossed={marks.extra}
       onshade={locked ? undefined : toggle}
       label={`Martabak dipotong ${task.target.d} sama besar`}
       size="lg"
@@ -51,20 +52,24 @@
     <NumberLine max={1} perUnit={task.perUnit} cards={[task.card]} placement={answer.placement} onplace={place} {locked} showValues={diff} />
   {:else}
     <p class="question">Berapa bagian martabak yang <span class="hl">diarsir</span>?</p>
-    <div class="read">
-      <Circle
-        slices={equalSlices(task.shaded.d)}
-        shaded={Array.from({ length: task.shaded.d }, (_, i) => i < task.shaded.n)}
-        label={`Martabak dipotong ${task.shaded.d} sama besar, ${task.shaded.n} diarsir`}
-        size="md"
-      />
+    <div class="read" class:with-diff={diff && picked}>
+      <div class="martabak">
+        <Circle
+          slices={equalSlices(task.shaded.d)}
+          shaded={Array.from({ length: task.shaded.d }, (_, i) => i < task.shaded.n)}
+          label={`Martabak dipotong ${task.shaded.d} sama besar, ${task.shaded.n} diarsir`}
+          size="md"
+        />
+      </div>
       {#if diff && picked}
         <div class="diff" data-testid="diff">
           <FractionCircles value={picked.value} label={`Kartu pilihanmu: ${spokenFraction(picked.value)}`} />
           <p class="caption" aria-hidden="true">Kartu pilihanmu</p>
         </div>
       {/if}
-      <CardSlots cards={task.cards} slots={PICK_SLOTS} placement={answer.placement} onplace={place} {locked} />
+      <div class="cards">
+        <CardSlots cards={task.cards} slots={PICK_SLOTS} placement={answer.placement} onplace={place} {locked} />
+      </div>
     </div>
   {/if}
 </div>
@@ -87,5 +92,22 @@
     display: grid;
     gap: 1em;
     justify-items: start;
+  }
+  .martabak,
+  .cards {
+    min-width: 0;
+  }
+  @media (min-width: 600px) {
+    .read.with-diff {
+      grid-template-columns: auto 1fr;
+      align-items: start;
+      column-gap: 2em;
+    }
+    .read.with-diff .cards {
+      grid-column: 1 / -1;
+    }
+    .read.with-diff .diff {
+      margin-top: 0;
+    }
   }
 </style>

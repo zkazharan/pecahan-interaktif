@@ -27,4 +27,20 @@ describe('DiffBars', () => {
     const wholes = container.querySelectorAll('[data-row] rect.whole');
     expect(wholes[0].getAttribute('width')).toBe(wholes[1].getAttribute('width'));
   });
+
+  it('captions the rows and hides the captions from assistive tech', () => {
+    const { container } = render(DiffBars, { props: { goal: frac(1, 2), mine: frac(2, 3) } });
+    const goal = container.querySelector('[data-row="goal"] .caption')!;
+    const mine = container.querySelector('[data-row="mine"] .caption')!;
+    expect(goal).toHaveTextContent('Tujuan');
+    expect(mine).toHaveTextContent('Pilihanmu');
+    expect(goal).toHaveAttribute('aria-hidden', 'true');
+    expect(mine).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('keeps the goal caption without any number when the goal is hidden', () => {
+    const { container } = render(DiffBars, { props: { goal: frac(7, 5), mine: frac(7, 10), hideGoal: true } });
+    expect(container.querySelector('[data-row="goal"] .caption')!.textContent).toBe('Tujuan');
+    expect(labels(container, 'goal')).toEqual([]);
+  });
 });

@@ -168,4 +168,28 @@ describe('NumberLine', () => {
     });
     expect(container.querySelector('[data-placed-value]')).toBeNull();
   });
+
+  it('puts the second of two close placed values on a lower row', () => {
+    const cards = [
+      { id: 'c0', value: frac(5, 12) },
+      { id: 'c1', value: frac(6, 12) },
+    ];
+    const { container } = render(NumberLine, {
+      props: { max: 1, perUnit: 12, cards, placement: { ...emptyPlacement(tickIds(1, 12)), t5: 'c0', t6: 'c1' }, onplace: () => {}, showValues: true },
+    });
+    const rows = [...container.querySelectorAll('[data-placed-value]')].map((el) => el.getAttribute('data-value-row'));
+    expect(rows).toEqual(['0', '1']);
+  });
+
+  it('keeps far apart placed values on the first row', () => {
+    const cards = [
+      { id: 'c0', value: frac(0, 4) },
+      { id: 'c1', value: frac(4, 4) },
+    ];
+    const { container } = render(NumberLine, {
+      props: { max: 1, perUnit: 4, cards, placement: { ...emptyPlacement(tickIds(1, 4)), t0: 'c0', t4: 'c1' }, onplace: () => {}, showValues: true },
+    });
+    const rows = [...container.querySelectorAll('[data-placed-value]')].map((el) => el.getAttribute('data-value-row'));
+    expect(rows).toEqual(['0', '0']);
+  });
 });

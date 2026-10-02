@@ -56,27 +56,30 @@ export function emptyAnswer(task: MembacaTask): MembacaAnswer {
   return { shaded: [], placement: emptyPlacement(['pilihan']) };
 }
 
-export function shadeDiff(target: Fraction, shaded: readonly boolean[]): boolean[] {
+export type ShadeDiff = { missing: boolean[]; extra: boolean[] };
+
+export function shadeDiff(target: Fraction, shaded: readonly boolean[]): ShadeDiff {
   const count = shaded.filter(Boolean).length;
-  const out = shaded.map(() => false);
+  const missing = shaded.map(() => false);
+  const extra = shaded.map(() => false);
   if (count < target.n) {
     let need = target.n - count;
     shaded.forEach((on, i) => {
       if (!on && need > 0) {
-        out[i] = true;
+        missing[i] = true;
         need -= 1;
       }
     });
   } else if (count > target.n) {
-    let extra = count - target.n;
-    for (let i = shaded.length - 1; i >= 0 && extra > 0; i--) {
+    let over = count - target.n;
+    for (let i = shaded.length - 1; i >= 0 && over > 0; i--) {
       if (shaded[i]) {
-        out[i] = true;
-        extra -= 1;
+        extra[i] = true;
+        over -= 1;
       }
     }
   }
-  return out;
+  return { missing, extra };
 }
 
 export function isComplete(task: MembacaTask, answer: MembacaAnswer): boolean {
@@ -96,6 +99,14 @@ export function solution(task: MembacaTask): MembacaAnswer {
   return { shaded: [], placement: { pilihan: task.correctId } };
 }
 
+function readHint(task: ReadTask, pickedId: string | null | undefined): string {
+  const picked = task.cards.find((card) => card.id === pickedId)?.value;
+  const { n, d } = task.shaded;
+  if (picked && equivalent(picked, frac(d - n, d))) return 'Pembilang = potong yang diarsir, bukan yang putih.';
+  if (picked && equivalent(picked, frac(n, d - n))) return 'Penyebut = semua potong, termasuk yang diarsir.';
+  return 'Penyebut = semua potong. Pembilang = potong yang diarsir.';
+}
+
 export function checkTask(task: MembacaTask, answer: MembacaAnswer): CheckResult {
   if (task.kind === 'shade') {
     const count = answer.shaded.filter(Boolean).length;
@@ -111,5 +122,5 @@ export function checkTask(task: MembacaTask, answer: MembacaAnswer): CheckResult
       : { correct, hint: `Bagi garis 0 sampai 1 jadi ${d} bagian, lalu hitung ${n} langkah dari 0.` };
   }
   const correct = answer.placement.pilihan === task.correctId;
-  return correct ? { correct, hint: '' } : { correct, hint: 'Penyebut = semua potong. Pembilang = potong yang diarsir.' };
+  return correct ? { correct, hint: '' } : { correct, hint: readHint(task, answer.placement.pilihan) };
 }

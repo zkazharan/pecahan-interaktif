@@ -23,13 +23,15 @@
 
   const cardValue = (id: string | null | undefined) => (task.kind === 'recut' ? undefined : task.cards.find((card) => card.id === id)?.value);
   const wrongSlots = $derived(task.kind === 'pair' && diff ? wrongPairSlots(task, answer.placement) : []);
-  const pairDiff = $derived.by(() => {
-    if (task.kind !== 'pair') return null;
-    for (const slot of task.slots) {
-      const mine = cardValue(answer.placement[slot.id]);
-      if (wrongSlots.includes(slot.id) && slot.value && mine) return { goal: slot.value, mine };
-    }
-    return null;
+  const MAX_PAIR_DIFFS = 3;
+  const pairDiffs = $derived.by(() => {
+    if (task.kind !== 'pair') return [];
+    return task.slots
+      .flatMap((slot) => {
+        const mine = cardValue(answer.placement[slot.id]);
+        return wrongSlots.includes(slot.id) && slot.value && mine ? [{ id: slot.id, goal: slot.value, mine }] : [];
+      })
+      .slice(0, MAX_PAIR_DIFFS);
   });
   const pickedValue = $derived(task.kind === 'simplify' ? cardValue(answer.placement.pilihan) : undefined);
 
@@ -64,9 +66,11 @@
   {:else if task.kind === 'pair'}
     <p class="question">Pasangkan setiap kartu dengan pecahan yang <span class="hl">senilai</span>.</p>
     <CardSlots cards={task.cards} slots={task.slots} placement={answer.placement} onplace={place} {locked} flagged={wrongSlots} />
-    {#if pairDiff}
+    {#if pairDiffs.length > 0}
       <div class="diff" data-testid="diff">
-        <DiffBars goal={pairDiff.goal} mine={pairDiff.mine} />
+        {#each pairDiffs as pair (pair.id)}
+          <DiffBars goal={pair.goal} mine={pair.mine} />
+        {/each}
       </div>
     {/if}
   {:else}
@@ -91,6 +95,8 @@
     font-weight: 600;
   }
   .diff {
+    display: grid;
+    gap: 1.2em;
     margin-top: 0.8em;
     padding: 0.6em 0.8em;
     border-left: 4px dashed var(--red);
