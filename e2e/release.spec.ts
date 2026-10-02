@@ -45,3 +45,16 @@ test('makes no third-party requests', async ({ page, context, baseURL }, testInf
 
   expect(outside).toEqual([]);
 });
+
+test('manifest lists PNG icons that load', async ({ request, baseURL }, testInfo) => {
+  test.skip(testInfo.project.name !== 'laptop', 'release check runs once');
+  const manifest = await (await request.get(new URL('manifest.webmanifest', baseURL).toString())).json();
+  const png = manifest.icons.filter((icon: { type: string }) => icon.type === 'image/png');
+  expect(png.map((icon: { sizes: string }) => icon.sizes).sort()).toEqual(['192x192', '512x512', '512x512']);
+  expect(png.some((icon: { purpose: string }) => icon.purpose === 'maskable')).toBe(true);
+  for (const icon of png) {
+    const response = await request.get(new URL(icon.src, baseURL).toString());
+    expect(response.status()).toBe(200);
+    expect(response.headers()['content-type']).toContain('image/png');
+  }
+});
