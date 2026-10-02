@@ -1,18 +1,19 @@
 import { formatHash, parseHash, type Route } from './router';
 
-let current = $state<Route>(parseHash(typeof location === 'undefined' ? '' : location.hash));
-let lastPeraga = $state<Record<string, Record<string, string>>>({});
+type PeragaMemory = Record<string, Record<string, string>>;
 
-function remember(route: Route): void {
-  if (route.name === 'module' && route.tab === 'peraga') lastPeraga = { ...lastPeraga, [route.slug]: route.params };
+function remembered(memory: PeragaMemory, route: Route): PeragaMemory {
+  return route.name === 'module' && route.tab === 'peraga' ? { ...memory, [route.slug]: route.params } : memory;
 }
+
+const initial = parseHash(typeof location === 'undefined' ? '' : location.hash);
+let current = $state<Route>(initial);
+let lastPeraga = $state<PeragaMemory>(remembered({}, initial));
 
 function setRoute(route: Route): void {
   current = route;
-  remember(route);
+  lastPeraga = remembered(lastPeraga, route);
 }
-
-remember(current);
 
 if (typeof window !== 'undefined') {
   window.addEventListener('hashchange', () => setRoute(parseHash(location.hash)));

@@ -14,6 +14,7 @@ export async function dragTo(page: Page, source: Locator, target: Locator): Prom
   for (let attempt = 0; attempt < 8 && (await isCovered(source)); attempt++) {
     await page.evaluate(() => window.scrollBy(0, 40));
   }
+  if (await isCovered(source)) throw new Error('drag source is still covered after scrolling');
   const from = await source.boundingBox();
   const to = await target.boundingBox();
   if (!from || !to) throw new Error('element not visible for drag');
