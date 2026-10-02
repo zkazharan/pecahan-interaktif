@@ -154,7 +154,7 @@ export class DragController {
 
   private finish(drag: ActiveDrag, targetId: string | null): void {
     const item = this.items.get(drag.itemId);
-    const target = this.resolveTarget(drag, targetId);
+    const target = targetId === null ? null : (this.targets.get(targetId) ?? null);
     this.setHover(drag, null);
     this.active = null;
     if (owner === this) owner = null;
@@ -162,16 +162,12 @@ export class DragController {
       item.el.removeAttribute('data-dragging');
       setOffset(item.el, 0, 0, target === null && drag.kind === 'pointer' && !this.reducedMotion());
     }
-    if (!target) return;
+    if (!target) {
+      if (targetId !== null && drag.kind === 'keyboard') this.say('Batal.');
+      return;
+    }
     this.options.onDrop({ itemId: drag.itemId, targetId: target.id });
     if (item) this.say(`${item.label} ditaruh di ${target.label}.`);
-  }
-
-  private resolveTarget(drag: ActiveDrag, targetId: string | null): DropTarget | null {
-    if (targetId === null) return null;
-    const target = this.targets.get(targetId);
-    if (target) return target;
-    return drag.kind === 'keyboard' ? (this.acceptingTargets(drag.itemId)[0] ?? null) : null;
   }
 
   private canStart(): boolean {

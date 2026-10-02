@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { frac } from '../lib/fraction';
 import Bar from './Bar.svelte';
 import { BAR, rowY, type BarRow, type Stacking } from './bar';
-import { ensureAnnouncer } from '../lib/drag/announce';
+import { withAnnouncer } from '../test-utils/announcer';
 
-ensureAnnouncer();
+withAnnouncer();
 
 const ROWS: BarRow[] = [
   { id: 'a', value: frac(1, 3), color: 'var(--frac-1)' },

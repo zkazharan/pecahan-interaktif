@@ -63,6 +63,9 @@ describe('announce', () => {
   });
 
   it('does not create a region when clearing without one', () => {
+    ensureAnnouncer();
+    document.body.innerHTML = '';
+    expect(document.querySelector('[data-testid="announcer"]')).toBeNull();
     clearAnnouncer();
     expect(document.querySelector('[data-testid="announcer"]')).toBeNull();
   });

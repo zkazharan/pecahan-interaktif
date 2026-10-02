@@ -374,21 +374,23 @@ describe('stale targets', () => {
     expect(controller.isDragging()).toBe(false);
   });
 
-  it('never drops a keyboard drag on a removed target', () => {
-    const { controller, drops } = setup();
+  it('sends a keyboard drag home when its hovered target was removed', () => {
+    const { controller, drops, said, item } = setup();
     const removed = controller.registerTarget({ id: 'gone', el: document.createElement('div'), label: 'Hilang', accepts: () => true });
     controller.keyDown('piece', ' ');
     controller.keyDown('piece', 'ArrowLeft');
     removed();
     controller.keyDown('piece', ' ');
-    expect(drops.map((d) => d.targetId)).not.toContain('gone');
-    expect(drops).toEqual([{ itemId: 'piece', targetId: 'a' }]);
+    expect(drops).toEqual([]);
+    expect(said.at(-1)).toBe('Batal.');
     expect(controller.isDragging()).toBe(false);
+    expect(item.hasAttribute('data-dragging')).toBe(false);
   });
 
   it('returns a keyboard drag home when no target is left', () => {
     const onDrop = vi.fn();
-    const controller = new DragController({ onDrop });
+    const said: string[] = [];
+    const controller = new DragController({ onDrop, announce: (m) => said.push(m) });
     const item = document.createElement('div');
     controller.registerItem({ id: 'x', el: item, label: 'x' });
     const unregister = controller.registerTarget({ id: 't', el: document.createElement('div'), label: 't', accepts: () => true });
@@ -396,6 +398,7 @@ describe('stale targets', () => {
     unregister();
     controller.keyDown('x', ' ');
     expect(onDrop).not.toHaveBeenCalled();
+    expect(said.at(-1)).toBe('Batal.');
     expect(controller.isDragging()).toBe(false);
     expect(item.hasAttribute('data-dragging')).toBe(false);
   });
