@@ -4,9 +4,11 @@ test('bar dividers do not fade in on the first mount', async ({ page }) => {
   await page.goto('./#/membandingkan/peraga?a=2/5&b=3/7');
   const dividers = page.locator('.bar .divider');
   await expect(dividers.first()).toBeAttached();
-  const running = await dividers.evaluateAll((els) => els.map((el) => el.getAnimations().length));
-  expect(running.length).toBeGreaterThan(0);
-  expect(running.every((count) => count === 0)).toBe(true);
+  const state = await dividers.evaluateAll((els) =>
+    els.map((el) => ({ faded: el.classList.contains('fade'), animation: getComputedStyle(el).animationName })),
+  );
+  expect(state.length).toBeGreaterThan(0);
+  expect(state.every((divider) => !divider.faded && divider.animation === 'none')).toBe(true);
 });
 
 test('bar dims the dividers of pieces that are not being dragged', async ({ page }) => {
