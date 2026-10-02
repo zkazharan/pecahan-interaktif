@@ -67,6 +67,30 @@ describe('membaca-pecahan Peraga', () => {
     expect(screen.getByRole('button', { name: 'Potongan 4' })).toHaveAttribute('aria-pressed', 'false');
   });
 
+  it('discards the teacher line card when the denominator changes and does not bring it back', async () => {
+    const { view, user } = setup(frac(2, 4));
+    for (let i = 0; i < 3; i++) await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    expect(view.container.querySelector('.pin [data-card="f"]')).not.toBeNull();
+    await view.rerender({ params: { f: frac(2, 3) } });
+    expect(view.container.querySelector('.pin [data-card="f"]')).toBeNull();
+    await view.rerender({ params: { f: frac(2, 4) } });
+    expect(view.container.querySelector('.pin [data-card="f"]')).toBeNull();
+    expect(screen.getByTestId('line-pile').querySelector('[data-card="f"]')).not.toBeNull();
+  });
+
+  it('discards teacher shading when the denominator changes and does not bring it back', async () => {
+    const { view, user } = setup(frac(2, 4));
+    await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Potongan 4' }));
+    const pressed = () => screen.getAllByRole('button', { name: /^Potongan \d+$/ }).filter((b) => b.getAttribute('aria-pressed') === 'true');
+    expect(pressed()).toHaveLength(1);
+    await view.rerender({ params: { f: frac(2, 3) } });
+    expect(pressed()).toHaveLength(0);
+    await view.rerender({ params: { f: frac(2, 4) } });
+    expect(pressed()).toHaveLength(0);
+  });
+
   it('keeps the displayed shading equal to the fraction from step 2', async () => {
     const { view, user } = setup();
     await user.click(next());

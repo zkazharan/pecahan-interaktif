@@ -47,7 +47,7 @@
   const diff = $derived(unchanged);
 
   function gradedKey(value: A): string {
-    return JSON.stringify(latihan.graded ? latihan.graded(value) : value);
+    return JSON.stringify(latihan.graded ? latihan.graded(value) : value) ?? 'undefined';
   }
 
   $effect(() => {

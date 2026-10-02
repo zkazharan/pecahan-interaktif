@@ -59,6 +59,28 @@ describe('pecahan-dari-jumlah Peraga', () => {
     expect(bagMarbles(0)).toBe(0);
   });
 
+  it('keeps the dealt marbles when only take changes', async () => {
+    const { view, user } = setup();
+    await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    await view.rerender({ params: { n: 12, k: 3, take: 3 } });
+    expect(trayCount()).toBe(0);
+    for (let i = 0; i < 3; i++) expect(bagMarbles(i)).toBe(4);
+    expect(screen.getByText(/Bagikan kelereng ke 3 kantong/)).toBeInTheDocument();
+  });
+
+  it('puts the marbles back when only n or only k changes', async () => {
+    const { view, user } = setup();
+    await user.click(next());
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    await view.rerender({ params: { n: 15, k: 3, take: 2 } });
+    expect(trayCount()).toBe(15);
+    await user.click(screen.getByRole('button', { name: 'Tunjukkan' }));
+    await view.rerender({ params: { n: 15, k: 5, take: 2 } });
+    expect(trayCount()).toBe(15);
+    expect(bagMarbles(0)).toBe(0);
+  });
+
   it('puts the marbles back when changing step and coming back', async () => {
     const { user } = setup();
     await user.click(next());

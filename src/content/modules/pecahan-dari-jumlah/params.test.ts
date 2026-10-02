@@ -15,6 +15,15 @@ describe('pecahan-dari-jumlah params', () => {
     expect(parseShareParams({ n: '12', k: '3', take: '0' })).toEqual(SHARE_DEFAULTS);
   });
 
+  it('returns a copy of the defaults, not the shared reference', () => {
+    const first = parseShareParams({});
+    expect(first).not.toBe(SHARE_DEFAULTS);
+    first.n = 99;
+    expect(parseShareParams({})).toEqual({ n: 12, k: 3, take: 2 });
+    expect(SHARE_DEFAULTS).toEqual({ n: 12, k: 3, take: 2 });
+    expect(parseShareParams({ n: '13', k: '3', take: '1' })).not.toBe(SHARE_DEFAULTS);
+  });
+
   it('round-trips through the URL', () => {
     const params = { n: 20, k: 4, take: 3 };
     expect(parseShareParams(formatShareParams(params))).toEqual(params);

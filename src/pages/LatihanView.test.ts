@@ -105,6 +105,21 @@ describe('LatihanView', () => {
     expect(screen.getByText(/Beda ya/)).toBeInTheDocument();
   });
 
+  it('treats an answer whose graded part is undefined as unchanged', async () => {
+    const graded: LatihanDef<{ target: number }, number | null> = {
+      ...fake,
+      graded: () => undefined,
+    };
+    const store = createProgressStore(null);
+    render(LatihanView, { props: { latihan: graded as LatihanDef<unknown, unknown>, slug: 'contoh', number: 3, seed: 1, store } });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: 'Jawab salah' }));
+    await user.click(screen.getByRole('button', { name: 'Cek jawaban' }));
+    await user.click(screen.getByRole('button', { name: 'Jawab salah lain' }));
+    expect(screen.getByRole('button', { name: 'Cek jawaban' })).toBeDisabled();
+    expect(screen.getByText(/Beda ya/)).toBeInTheDocument();
+  });
+
   it('moves focus to the next button once the answer is correct', async () => {
     const { user } = setup();
     await user.click(screen.getByRole('button', { name: 'Jawab benar' }));

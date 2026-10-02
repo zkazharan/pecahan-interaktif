@@ -83,7 +83,7 @@ export function emptyAnswer(_task: BedaTask): BedaAnswer {
 }
 
 export function isComplete(task: BedaTask, answer: BedaAnswer): boolean {
-  return task.a.d * answer.cuts[0] === task.b.d * answer.cuts[1] && answer.placement.pilihan != null;
+  return answer.cuts[0] >= 1 && answer.cuts[1] >= 1 && task.a.d * answer.cuts[0] === task.b.d * answer.cuts[1] && answer.placement.pilihan != null;
 }
 
 export function solution(task: BedaTask): BedaAnswer {

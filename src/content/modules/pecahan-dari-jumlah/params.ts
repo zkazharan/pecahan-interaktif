@@ -13,10 +13,10 @@ export function maxTotal(k: number): number {
 
 export function parseShareParams(raw: Record<string, string>): ShareParams {
   const k = readCount(raw.k, SHARE_K_MIN, SHARE_K_MAX, -1);
-  if (k < 0) return SHARE_DEFAULTS;
+  if (k < 0) return { ...SHARE_DEFAULTS };
   const n = readCount(raw.n, k, maxTotal(k), -1);
   const take = readCount(raw.take, 1, k, -1);
-  if (n < 0 || take < 0 || n % k !== 0) return SHARE_DEFAULTS;
+  if (n < 0 || take < 0 || n % k !== 0) return { ...SHARE_DEFAULTS };
   return { n, k, take };
 }
 

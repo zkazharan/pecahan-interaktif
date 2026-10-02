@@ -71,6 +71,15 @@ describe('checkTask and isComplete', () => {
     });
   });
 
+  it('is not complete while either piece count is below 1', () => {
+    const task = generateTasks(createRng(1))[0];
+    const placement = { pilihan: 'c0' };
+    expect(isComplete(task, { cuts: [0, 0], placement })).toBe(false);
+    expect(isComplete(task, { cuts: [0, 1], placement })).toBe(false);
+    expect(isComplete(task, { cuts: [1, 0], placement })).toBe(false);
+    expect(isComplete(task, { cuts: [-3, -2], placement })).toBe(false);
+  });
+
   it('hints at subtracting numerators for a subtraction task', () => {
     const task: BedaTask = {
       kind: 'sub-recut',

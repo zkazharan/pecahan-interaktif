@@ -27,7 +27,6 @@
   $effect.pre(() => {
     void n;
     void k;
-    void take;
     untrack(() => (moved = null));
   });
 
