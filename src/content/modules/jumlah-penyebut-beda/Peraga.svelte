@@ -101,6 +101,8 @@
   {#snippet controls()}
     <FractionStepper label="Pecahan pertama" value={params.a} limits={DIFF_LIMITS} accepts={(a) => fitsCommon(a, params.b)} onchange={setA} onreject={reject} />
     <FractionStepper label="Pecahan kedua" value={params.b} limits={DIFF_LIMITS} accepts={(b) => fitsCommon(params.a, b)} onchange={setB} onreject={reject} />
+  {/snippet}
+  {#snippet actions()}
     {#if step === 1}
       <CountStepper label="Potong ulang pita pertama" value={kNowA} min={1} max={maxCut(params.a.d)} onchange={(value) => (cutA = value)} />
       <CountStepper label="Potong ulang pita kedua" value={kNowB} min={1} max={maxCut(params.b.d)} onchange={(value) => (cutB = value)} />

@@ -9,10 +9,11 @@
     caption: Snippet;
     stage: Snippet;
     controls?: Snippet;
+    actions?: Snippet;
     onshow?: () => void;
   };
 
-  let { step, total, onstep, caption, stage, controls, onshow }: Props = $props();
+  let { step, total, onstep, caption, stage, controls, actions, onshow }: Props = $props();
 
   const WIDE = '(min-width: 600px)';
 
@@ -40,6 +41,9 @@
         <summary>Ubah angka</summary>
         <div class="controls">{@render controls()}</div>
       </details>
+    {/if}
+    {#if actions}
+      <div class="actions">{@render actions()}</div>
     {/if}
     <div class="nav">
       {#if onshow}
@@ -90,6 +94,28 @@
     background: #fff;
     font-weight: 600;
     cursor: pointer;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1em;
+  }
+  .actions:empty {
+    display: none;
+  }
+  .numbers summary::before {
+    content: '';
+    width: 0;
+    height: 0;
+    margin-right: 0.6em;
+    border-left: 0.35em solid transparent;
+    border-right: 0.35em solid transparent;
+    border-top: 0.45em solid currentColor;
+    transform: rotate(-90deg);
+    transition: transform 0.2s;
+  }
+  .numbers[open] summary::before {
+    transform: none;
   }
   .controls {
     display: flex;

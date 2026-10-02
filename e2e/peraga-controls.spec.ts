@@ -40,3 +40,19 @@ test('membandingkan: the pieces are locked once the caption states the result', 
     if (step < 3) await page.getByRole('button', { name: 'Lanjut →' }).click();
   }
 });
+
+test('jumlah-penyebut-beda: the re-cut stepper works without opening Ubah angka', async ({ page }) => {
+  await page.goto('./#/jumlah-penyebut-beda/peraga?a=1/2&b=1/3');
+  await page.getByRole('button', { name: 'Lanjut →' }).click();
+  await page.getByRole('button', { name: 'Tambah potong ulang pita pertama' }).click();
+  await expect(page.getByRole('group', { name: 'Potong ulang pita pertama' }).getByRole('status')).toHaveText('2');
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(0);
+});
+
+test('senilai: the re-cut stepper works without opening Ubah angka', async ({ page }) => {
+  await page.goto('./#/senilai/peraga?f=1/2');
+  await page.getByRole('button', { name: 'Lanjut →' }).click();
+  await page.getByRole('button', { name: 'Tambah potong ulang' }).click();
+  await expect(page.getByText('panjangnya tetap sama!')).toBeVisible();
+});

@@ -67,7 +67,11 @@
   {/snippet}
   {#snippet controls()}
     <FractionStepper label="Pecahan" value={params.f} limits={EQUIV_LIMITS} onchange={(f) => onparams({ f })} />
-    <CountStepper label="Potong ulang" value={cutsNow} min={1} max={limit} onchange={(value) => (cuts = value)} />
+  {/snippet}
+  {#snippet actions()}
+    {#if step === 1 || step === 2}
+      <CountStepper label="Potong ulang" value={cutsNow} min={1} max={limit} onchange={(value) => (cuts = value)} />
+    {/if}
   {/snippet}
 </PeragaFrame>
 

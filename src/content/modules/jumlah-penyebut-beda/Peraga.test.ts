@@ -123,4 +123,15 @@ describe('jumlah-penyebut-beda Peraga', () => {
     expect(label(view.container, 'a')).toBe('312');
     expect(label(view.container, 'b')).toBe('212');
   });
+
+  it('keeps the re-cut steppers outside the number disclosure', async () => {
+    const { user } = setup();
+    await user.click(next());
+    const details = screen.getByText('Ubah angka').closest('details')!;
+    const cut = screen.getByRole('button', { name: 'Tambah potong ulang pita pertama' });
+    expect(details).not.toContainElement(cut);
+    expect(details).toContainElement(screen.getByLabelText('Penyebut Pecahan pertama', { exact: true }));
+    await user.click(cut);
+    expect(stepperValue('Potong ulang pita pertama')).toBe('2');
+  });
 });

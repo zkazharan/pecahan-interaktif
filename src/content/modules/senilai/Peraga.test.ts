@@ -31,6 +31,7 @@ describe('senilai Peraga', () => {
 
   it('never re-cuts past 24 parts', async () => {
     const { view, user } = setup(frac(3, 8));
+    await user.click(next());
     for (let i = 0; i < 3; i++) await user.click(screen.getByRole('button', { name: 'Tambah potong ulang' }));
     expect(screen.getByRole('button', { name: 'Tambah potong ulang' })).toBeDisabled();
     expect(lowerLabel(view.container)).toBe('924');
@@ -38,6 +39,7 @@ describe('senilai Peraga', () => {
 
   it('clamps the re-cut when the fraction changes', async () => {
     const { view, user } = setup(frac(1, 2));
+    await user.click(next());
     for (let i = 0; i < 5; i++) await user.click(screen.getByRole('button', { name: 'Tambah potong ulang' }));
     await view.rerender({ params: { f: frac(1, 8) } });
     expect(lowerLabel(view.container)).toBe('324');
@@ -47,5 +49,21 @@ describe('senilai Peraga', () => {
     const { onparams, user } = setup();
     await user.click(screen.getByRole('button', { name: 'Tambah penyebut Pecahan' }));
     expect(onparams).toHaveBeenCalledWith({ f: { n: 1, d: 3 } });
+  });
+
+  it('shows the re-cut stepper outside the number disclosure on steps 1 and 2 only', async () => {
+    const { user } = setup();
+    const cut = () => screen.queryByRole('button', { name: 'Tambah potong ulang' });
+    expect(cut()).toBeNull();
+    await user.click(next());
+    const details = screen.getByText('Ubah angka').closest('details')!;
+    expect(details).not.toContainElement(cut());
+    expect(details).toContainElement(screen.getByLabelText('Penyebut Pecahan', { exact: true }));
+    await user.click(cut()!);
+    expect(screen.getByText('panjangnya tetap sama!')).toBeInTheDocument();
+    await user.click(next());
+    expect(cut()).not.toBeNull();
+    await user.click(next());
+    expect(cut()).toBeNull();
   });
 });
